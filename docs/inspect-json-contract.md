@@ -14,7 +14,7 @@ cargo run --quiet -- inspect . --json
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "repo": {},
   "detected_files": [],
   "package_managers": [],
@@ -22,6 +22,7 @@ cargo run --quiet -- inspect . --json
   "components": [],
   "commands": [],
   "tests": [],
+  "relationships": [],
   "evidence": [],
   "warnings": []
 }
@@ -36,7 +37,7 @@ Stable contract identifier for consumers.
 Current value:
 
 ```json
-"0.1"
+"0.2"
 ```
 
 Consumers should reject or explicitly tolerate versions they do not understand.
@@ -58,6 +59,7 @@ Files or directories that triggered detection.
 
 ```json
 {
+  "id": "file-cargo-toml",
   "path": "Cargo.toml",
   "kind": "manifest",
   "evidence_id": "evidence-1"
@@ -72,6 +74,7 @@ Package manager or build tool hints.
 
 ```json
 {
+  "id": "package-manager-cargo",
   "kind": "cargo",
   "name": "cargo",
   "evidence_id": "evidence-1"
@@ -86,6 +89,7 @@ Workspace boundaries found in supported manifests.
 
 ```json
 {
+  "id": "workspace-cargo",
   "name": "cargo-workspace",
   "members": ["crates/core"],
   "evidence_id": "evidence-2"
@@ -102,11 +106,14 @@ Repository-level components such as crates, packages, modules, or generic build 
   "name": "code-intel-kernel",
   "kind": "rust_crate",
   "path": ".",
+  "file_patterns": ["Cargo.toml", "Cargo.lock", "src/**", "tests/**"],
   "evidence_id": "evidence-2"
 }
 ```
 
 Components are not symbols. A Rust crate or Node package may be a component; a function or class is not included in Phase 1B.
+
+`file_patterns` are RepoGraph-level path scopes. They are not source-level symbol ownership.
 
 ### commands
 
@@ -118,6 +125,7 @@ Commands inferred from manifests or build files.
   "kind": "test",
   "command": "cargo test",
   "scope": ".",
+  "scope_ref": "repo",
   "confidence": 0.95,
   "evidence_id": "evidence-1"
 }
@@ -134,12 +142,32 @@ Test targets only.
   "id": "test-cargo-test",
   "name": "cargo test",
   "command": "cargo test",
+  "scope": ".",
+  "scope_ref": "repo",
   "confidence": 0.95,
   "evidence_id": "evidence-1"
 }
 ```
 
 If no test command is supported or confidently inferred, `inspect` should emit a structured warning instead of inventing a target.
+
+### relationships
+
+Minimal RepoGraph edges between repository-level facts.
+
+```json
+{
+  "id": "relationship-hascommand-repo-cmd-cargo-test",
+  "kind": "has_command",
+  "src_id": "repo",
+  "dst_id": "cmd-cargo-test",
+  "evidence_id": "evidence-1"
+}
+```
+
+Known `kind` values include `contains`, `belongs_to_workspace`, `defines_component`, `has_command`, `has_test`, `tests`, `depends_on`, `uses_package_manager`, and `evidence_for`.
+
+Relationships are still RepoGraph-level. They do not represent symbol references, imports, calls, or type relationships.
 
 ### evidence
 
@@ -199,6 +227,7 @@ Non-critical warnings must not fail inspection.
 - Top-level fields must be present even when arrays are empty.
 - `repo.read_only` must be `true`.
 - Every `detected_files[]`, `package_managers[]`, `workspaces[]`, `components[]`, `commands[]`, and `tests[]` entry must have a non-empty `evidence_id`.
+- Every `relationships[]` entry must have a non-empty `evidence_id`.
 - Every referenced `evidence_id` must exist in `evidence[]`.
 - Evidence IDs and warning IDs must be deterministic for the same repository state.
 - Missing or unsupported information should produce structured warnings, not guesses.
@@ -208,7 +237,7 @@ Non-critical warnings must not fail inspection.
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "repo": {
     "root": "/repo",
     "read_only": true
@@ -234,6 +263,7 @@ Non-critical warnings must not fail inspection.
       "name": "example",
       "kind": "rust_crate",
       "path": ".",
+      "file_patterns": ["Cargo.toml", "Cargo.lock", "src/**", "tests/**"],
       "evidence_id": "evidence-2"
     }
   ],
@@ -243,6 +273,7 @@ Non-critical warnings must not fail inspection.
       "kind": "test",
       "command": "cargo test",
       "scope": ".",
+      "scope_ref": "repo",
       "confidence": 0.95,
       "evidence_id": "evidence-1"
     }
@@ -252,10 +283,13 @@ Non-critical warnings must not fail inspection.
       "id": "test-cargo-test",
       "name": "cargo test",
       "command": "cargo test",
+      "scope": ".",
+      "scope_ref": "repo",
       "confidence": 0.95,
       "evidence_id": "evidence-1"
     }
   ],
+  "relationships": [],
   "evidence": [
     {
       "id": "evidence-1",

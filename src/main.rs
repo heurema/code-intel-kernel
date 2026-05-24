@@ -1,4 +1,6 @@
-use code_intel_kernel::{create_evidence_bundle, inspect_repo, EvidenceRequest, KernelProfile};
+use code_intel_kernel::{
+    analyze_impact, create_evidence_bundle, inspect_repo, EvidenceRequest, KernelProfile,
+};
 use serde::Serialize;
 use serde_json::json;
 
@@ -18,6 +20,13 @@ fn run(args: Vec<String>) -> i32 {
         Some("repo-map") => {
             let snapshot = inspect_repo(".");
             print_json(&snapshot);
+            0
+        }
+        Some("impact") => {
+            let changed_files = parse_changed_files(&args[1..]);
+            let snapshot = inspect_repo(".");
+            let report = analyze_impact(&snapshot, changed_files);
+            print_json(&report);
             0
         }
         Some("where-to-edit") => {
@@ -73,9 +82,45 @@ fn parse_profile(args: &[String]) -> Option<KernelProfile> {
         .and_then(KernelProfile::parse)
 }
 
+fn parse_changed_files(args: &[String]) -> Vec<String> {
+    let mut changed_files = Vec::new();
+    let mut args_iter = args.iter();
+
+    while let Some(arg) = args_iter.next() {
+        if arg == "--json" {
+            continue;
+        }
+
+        if arg == "--changed-files" {
+            if let Some(value) = args_iter.next() {
+                changed_files.extend(split_changed_files(value));
+            }
+            continue;
+        }
+
+        if let Some(value) = arg.strip_prefix("--changed-files=") {
+            changed_files.extend(split_changed_files(value));
+            continue;
+        }
+
+        changed_files.extend(split_changed_files(arg));
+    }
+
+    changed_files
+}
+
+fn split_changed_files(value: &str) -> Vec<String> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
 fn print_help() {
     println!(
-        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nThis is a documentation-first Rust skeleton. RepoGraph, SymbolGraph, LSP, SQLite, EvidenceBundle, and ProcessReward implementations are intentionally deferred."
+        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nThis is a documentation-first Rust skeleton. RepoGraph impact is repository/build/test-level only; SymbolGraph, LSP, SQLite, MCP, EvidenceBundle, and ProcessReward implementations are intentionally deferred."
     );
 }
 

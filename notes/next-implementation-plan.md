@@ -29,6 +29,14 @@
 - Add fixtures for partial and ambiguous manifests.
 - Do not add Tree-sitter, LSP, SQLite, MCP, embeddings, workspace split, or xtask yet.
 
+## Phase 1D: RepoGraph depth before symbols
+
+- Improve command inference across Cargo, Node, Python, Go, Make, just, and workflows.
+- Improve workspace/component relationships and dependency edges when manifest evidence is explicit.
+- Add more fixtures for ambiguous and partially supported build systems.
+- Keep impact analysis RepoGraph-only until behavior is stable on real repositories.
+- Consider storage only after the in-memory graph output has proven stable.
+
 ## Phase 2: SymbolGraph MVP
 
 - Add Tree-sitter extraction for TypeScript, TSX, JavaScript, and Python.

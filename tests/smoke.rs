@@ -1,6 +1,7 @@
 use code_intel_kernel::{
-    create_evidence_bundle, inspect_repo, DetectionCategory, DetectionSeverity, EvidenceRequest,
-    KernelProfile, RepoInspection, INSPECT_CONTRACT_VERSION,
+    analyze_impact, create_evidence_bundle, inspect_repo, DetectionCategory, DetectionSeverity,
+    EvidenceRequest, ImpactReport, ImpactStatus, KernelProfile, RepoInspection,
+    IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
 use std::process::Command;
@@ -35,7 +36,7 @@ fn core_uses_generic_profiles_instead_of_consumer_names() {
 fn parses_minimal_cargo_toml_fixture() {
     let graph = inspect_repo("tests/fixtures/minimal-cargo");
 
-    assert_eq!(graph.contract_version, "0.1");
+    assert_eq!(graph.contract_version, "0.2");
     assert!(graph
         .detected_files
         .iter()
@@ -224,11 +225,114 @@ fn inspect_cli_output_has_contract_top_level_fields() {
         "components",
         "commands",
         "tests",
+        "relationships",
         "evidence",
         "warnings",
     ] {
         assert!(json.get(key).is_some(), "missing top-level key: {key}");
     }
+}
+
+#[test]
+fn repeated_inspect_output_has_stable_ordering() {
+    let first = inspect_repo("tests/fixtures/minimal-cargo");
+    let second = inspect_repo("tests/fixtures/minimal-cargo");
+
+    assert_eq!(first.detected_files, second.detected_files);
+    assert_eq!(first.package_managers, second.package_managers);
+    assert_eq!(first.components, second.components);
+    assert_eq!(first.commands, second.commands);
+    assert_eq!(first.tests, second.tests);
+    assert_eq!(first.relationships, second.relationships);
+    assert_eq!(first.evidence, second.evidence);
+    assert_eq!(first.warnings, second.warnings);
+}
+
+#[test]
+fn impact_for_rust_source_recommends_rust_commands() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let impact = analyze_impact(&graph, ["src/lib.rs"]);
+
+    assert_eq!(impact.contract_version, IMPACT_CONTRACT_VERSION);
+    assert_eq!(impact.status, ImpactStatus::Partial);
+    assert!(impact
+        .impacted_components
+        .iter()
+        .any(|component| component.name == "minimal-cargo"));
+    assert!(impact
+        .recommended_commands
+        .iter()
+        .any(|command| command.command == "cargo check"));
+    assert_all_impact_facts_have_evidence(&impact);
+}
+
+#[test]
+fn impact_for_manifest_change_broadens_to_all_repo_commands() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let impact = analyze_impact(&graph, ["Cargo.toml"]);
+
+    assert_eq!(impact.status, ImpactStatus::Partial);
+    assert_eq!(impact.impacted_components.len(), graph.components.len());
+    assert_eq!(impact.recommended_commands.len(), graph.commands.len());
+    assert_eq!(impact.recommended_tests.len(), graph.tests.len());
+}
+
+#[test]
+fn impact_for_test_file_recommends_test_command() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let impact = analyze_impact(&graph, ["tests/smoke.rs"]);
+
+    assert!(impact
+        .recommended_tests
+        .iter()
+        .any(|test| test.command == "cargo test"));
+}
+
+#[test]
+fn impact_for_unknown_file_is_insufficient_evidence() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let impact = analyze_impact(&graph, ["docs/unknown.md"]);
+
+    assert_eq!(impact.status, ImpactStatus::InsufficientEvidence);
+    assert!(impact
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::UnmappedChange));
+}
+
+#[test]
+fn impact_with_malformed_manifest_keeps_warning_and_does_not_panic() {
+    let graph = inspect_repo("tests/fixtures/malformed-manifest");
+    let impact = analyze_impact(&graph, ["package.json"]);
+
+    assert_eq!(impact.contract_version, IMPACT_CONTRACT_VERSION);
+    assert!(impact
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::MalformedManifest));
+}
+
+#[test]
+fn impact_cli_output_is_valid_json() {
+    let binary = env!("CARGO_BIN_EXE_code-intel");
+    let output = Command::new(binary)
+        .args(["impact", "src/main.rs", "Cargo.toml", "--json"])
+        .output()
+        .expect("impact command should run");
+
+    assert!(
+        output.status.success(),
+        "impact command failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let report: ImpactReport =
+        serde_json::from_slice(&output.stdout).expect("impact output should be JSON");
+    assert_eq!(report.contract_version, IMPACT_CONTRACT_VERSION);
+    assert!(report
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::RepoGraphOnly));
 }
 
 #[test]
@@ -293,6 +397,11 @@ fn assert_all_evidence_refs_exist(graph: &RepoInspection) {
         assert!(evidence_ids.contains(test.evidence_id.as_str()));
     }
 
+    for relationship in &graph.relationships {
+        assert!(!relationship.evidence_id.is_empty());
+        assert!(evidence_ids.contains(relationship.evidence_id.as_str()));
+    }
+
     for warning in &graph.warnings {
         if let Some(evidence_id) = &warning.evidence_id {
             assert!(evidence_ids.contains(evidence_id.as_str()));
@@ -314,6 +423,30 @@ fn assert_all_graph_facts_have_evidence(graph: &RepoInspection) {
         .iter()
         .all(|fact| !fact.evidence_id.is_empty()));
     assert!(graph.tests.iter().all(|fact| !fact.evidence_id.is_empty()));
+}
+
+fn assert_all_impact_facts_have_evidence(report: &ImpactReport) {
+    let evidence_ids = report
+        .evidence
+        .iter()
+        .map(|evidence| evidence.id.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+
+    for component in &report.impacted_components {
+        assert!(evidence_ids.contains(component.evidence_id.as_str()));
+    }
+
+    for workspace in &report.impacted_workspaces {
+        assert!(evidence_ids.contains(workspace.evidence_id.as_str()));
+    }
+
+    for command in &report.recommended_commands {
+        assert!(evidence_ids.contains(command.evidence_id.as_str()));
+    }
+
+    for test in &report.recommended_tests {
+        assert!(evidence_ids.contains(test.evidence_id.as_str()));
+    }
 }
 
 fn assert_all_warnings_are_structured(graph: &RepoInspection) {

@@ -4,7 +4,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use toml::Value as TomlValue;
 
-pub const INSPECT_CONTRACT_VERSION: &str = "0.1";
+pub const INSPECT_CONTRACT_VERSION: &str = "0.2";
+pub const IMPACT_CONTRACT_VERSION: &str = "0.1";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -65,8 +66,32 @@ pub enum DetectionCategory {
     MissingCommand,
     NoSupportedManifests,
     PartialSupport,
+    RepoGraphOnly,
+    UnmappedChange,
     UnreadableManifest,
     UnsupportedPattern,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RelationshipKind {
+    Contains,
+    BelongsToWorkspace,
+    DefinesComponent,
+    HasCommand,
+    HasTest,
+    Tests,
+    DependsOn,
+    UsesPackageManager,
+    EvidenceFor,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ImpactStatus {
+    Ok,
+    Partial,
+    InsufficientEvidence,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -79,6 +104,7 @@ pub struct RepoInspection {
     pub components: Vec<Component>,
     pub commands: Vec<RepoCommand>,
     pub tests: Vec<TestTarget>,
+    pub relationships: Vec<Relationship>,
     pub evidence: Vec<Evidence>,
     pub warnings: Vec<DetectionIssue>,
 }
@@ -91,6 +117,7 @@ pub struct RepoInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DetectedFile {
+    pub id: String,
     pub path: String,
     pub kind: DetectedFileKind,
     pub evidence_id: String,
@@ -98,6 +125,7 @@ pub struct DetectedFile {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PackageManager {
+    pub id: String,
     pub kind: PackageManagerKind,
     pub name: String,
     pub evidence_id: String,
@@ -105,6 +133,7 @@ pub struct PackageManager {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Workspace {
+    pub id: String,
     pub name: String,
     pub members: Vec<String>,
     pub evidence_id: String,
@@ -116,6 +145,7 @@ pub struct Component {
     pub name: String,
     pub kind: String,
     pub path: String,
+    pub file_patterns: Vec<String>,
     pub evidence_id: String,
 }
 
@@ -125,6 +155,7 @@ pub struct RepoCommand {
     pub kind: RepoCommandKind,
     pub command: String,
     pub scope: String,
+    pub scope_ref: Option<String>,
     pub confidence: f32,
     pub evidence_id: String,
 }
@@ -134,8 +165,33 @@ pub struct TestTarget {
     pub id: String,
     pub name: String,
     pub command: String,
+    pub scope: String,
+    pub scope_ref: Option<String>,
     pub confidence: f32,
     pub evidence_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Relationship {
+    pub id: String,
+    pub kind: RelationshipKind,
+    pub src_id: String,
+    pub dst_id: String,
+    pub evidence_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ImpactReport {
+    pub contract_version: String,
+    pub status: ImpactStatus,
+    pub changed_files: Vec<String>,
+    pub impacted_components: Vec<Component>,
+    pub impacted_workspaces: Vec<Workspace>,
+    pub recommended_commands: Vec<RepoCommand>,
+    pub recommended_tests: Vec<TestTarget>,
+    pub evidence: Vec<Evidence>,
+    pub warnings: Vec<DetectionIssue>,
+    pub limitations: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -182,6 +238,107 @@ pub fn inspect_repo(repo_path: impl AsRef<Path>) -> RepoInspection {
     builder.finish()
 }
 
+pub fn analyze_impact<I, S>(repo_graph: &RepoInspection, changed_files: I) -> ImpactReport
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let changed_files = changed_files
+        .into_iter()
+        .map(|file| normalize_changed_file(file.as_ref()))
+        .filter(|file| !file.is_empty())
+        .collect::<Vec<_>>();
+
+    let mut impacted_components = Vec::<Component>::new();
+    let mut impacted_workspaces = Vec::<Workspace>::new();
+    let mut recommended_commands = Vec::<RepoCommand>::new();
+    let mut recommended_tests = Vec::<TestTarget>::new();
+    let mut warnings = repo_graph.warnings.clone();
+    warnings.push(DetectionIssue {
+        id: "impact-warning-1".to_string(),
+        severity: DetectionSeverity::Info,
+        category: DetectionCategory::RepoGraphOnly,
+        message: "SymbolGraph is not implemented; impact is based on repository structure and paths only.".to_string(),
+        path: None,
+        evidence_id: None,
+    });
+
+    for changed_file in &changed_files {
+        if is_broad_repo_change(repo_graph, changed_file) {
+            push_all_components(repo_graph, &mut impacted_components);
+            push_all_workspaces(repo_graph, &mut impacted_workspaces);
+            push_all_commands(repo_graph, &mut recommended_commands);
+            push_all_tests(repo_graph, &mut recommended_tests);
+            continue;
+        }
+
+        let matching_components = repo_graph
+            .components
+            .iter()
+            .filter(|component| component_matches_changed_file(component, changed_file))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        if matching_components.is_empty() {
+            warnings.push(DetectionIssue {
+                id: format!("impact-warning-unmapped-{}", warnings.len() + 1),
+                severity: DetectionSeverity::Warning,
+                category: DetectionCategory::UnmappedChange,
+                message: "Changed file could not be mapped to a RepoGraph component.".to_string(),
+                path: Some(changed_file.clone()),
+                evidence_id: None,
+            });
+            continue;
+        }
+
+        for component in matching_components {
+            push_component(&mut impacted_components, component);
+        }
+    }
+
+    if !impacted_components.is_empty() {
+        for command in &repo_graph.commands {
+            if command_applies_to_components(command, &impacted_components) {
+                push_command(&mut recommended_commands, command.clone());
+            }
+        }
+
+        for test in &repo_graph.tests {
+            if test_applies_to_components(test, &impacted_components)
+                || changed_files.iter().any(|file| is_test_path(file))
+            {
+                push_test(&mut recommended_tests, test.clone());
+            }
+        }
+    }
+
+    let status = if impacted_components.is_empty()
+        && impacted_workspaces.is_empty()
+        && recommended_commands.is_empty()
+        && recommended_tests.is_empty()
+    {
+        ImpactStatus::InsufficientEvidence
+    } else {
+        ImpactStatus::Partial
+    };
+
+    ImpactReport {
+        contract_version: IMPACT_CONTRACT_VERSION.to_string(),
+        status,
+        changed_files,
+        impacted_components,
+        impacted_workspaces,
+        recommended_commands,
+        recommended_tests,
+        evidence: repo_graph.evidence.clone(),
+        warnings,
+        limitations: vec![
+            "RepoGraph-only impact analysis; no symbols, imports, definitions, references, or call graph are used.".to_string(),
+            "Recommendations are conservative and based on path containment, manifests, command scopes, and test scopes.".to_string(),
+        ],
+    }
+}
+
 struct RepoGraphBuilder {
     repo_root: String,
     next_evidence: usize,
@@ -192,6 +349,7 @@ struct RepoGraphBuilder {
     components: Vec<Component>,
     commands: Vec<RepoCommand>,
     tests: Vec<TestTarget>,
+    relationships: Vec<Relationship>,
     evidence: Vec<Evidence>,
     warnings: Vec<DetectionIssue>,
 }
@@ -208,12 +366,22 @@ impl RepoGraphBuilder {
             components: Vec::new(),
             commands: Vec::new(),
             tests: Vec::new(),
+            relationships: Vec::new(),
             evidence: Vec::new(),
             warnings: Vec::new(),
         }
     }
 
-    fn finish(self) -> RepoInspection {
+    fn finish(mut self) -> RepoInspection {
+        self.detected_files.sort_by(|a, b| a.id.cmp(&b.id));
+        self.package_managers.sort_by(|a, b| a.id.cmp(&b.id));
+        self.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
+        self.components.sort_by(|a, b| a.id.cmp(&b.id));
+        self.commands.sort_by(|a, b| a.id.cmp(&b.id));
+        self.tests.sort_by(|a, b| a.id.cmp(&b.id));
+        self.relationships.sort_by(|a, b| a.id.cmp(&b.id));
+        self.warnings.sort_by(|a, b| a.id.cmp(&b.id));
+
         RepoInspection {
             contract_version: INSPECT_CONTRACT_VERSION.to_string(),
             repo: RepoInfo {
@@ -226,6 +394,7 @@ impl RepoGraphBuilder {
             components: self.components,
             commands: self.commands,
             tests: self.tests,
+            relationships: self.relationships,
             evidence: self.evidence,
             warnings: self.warnings,
         }
@@ -240,11 +409,19 @@ impl RepoGraphBuilder {
         reason: &str,
     ) -> String {
         let evidence_id = self.add_evidence(path, evidence_kind, field, reason);
+        let file_id = stable_id("file", &normalize_path(path));
         self.detected_files.push(DetectedFile {
+            id: file_id.clone(),
             path: normalize_path(path),
             kind,
             evidence_id: evidence_id.clone(),
         });
+        self.add_relationship(
+            RelationshipKind::EvidenceFor,
+            &evidence_id,
+            &file_id,
+            evidence_id.clone(),
+        );
         evidence_id
     }
 
@@ -288,6 +465,7 @@ impl RepoGraphBuilder {
     }
 
     fn add_package_manager(&mut self, kind: PackageManagerKind, name: &str, evidence_id: String) {
+        let id = stable_id("package-manager", name);
         if self
             .package_managers
             .iter()
@@ -297,20 +475,63 @@ impl RepoGraphBuilder {
         }
 
         self.package_managers.push(PackageManager {
+            id: id.clone(),
             kind,
             name: name.to_string(),
-            evidence_id,
+            evidence_id: evidence_id.clone(),
         });
+        self.add_relationship(
+            RelationshipKind::EvidenceFor,
+            &evidence_id,
+            &id,
+            evidence_id.clone(),
+        );
     }
 
-    fn add_component(&mut self, id: &str, name: &str, kind: &str, path: &str, evidence_id: String) {
+    fn add_workspace(&mut self, id: &str, name: &str, members: Vec<String>, evidence_id: String) {
+        self.workspaces.push(Workspace {
+            id: id.to_string(),
+            name: name.to_string(),
+            members,
+            evidence_id: evidence_id.clone(),
+        });
+        self.add_relationship(
+            RelationshipKind::EvidenceFor,
+            &evidence_id,
+            id,
+            evidence_id.clone(),
+        );
+    }
+
+    fn add_component(
+        &mut self,
+        id: &str,
+        name: &str,
+        kind: &str,
+        path: &str,
+        file_patterns: Vec<String>,
+        evidence_id: String,
+    ) {
         self.components.push(Component {
             id: id.to_string(),
             name: name.to_string(),
             kind: kind.to_string(),
             path: path.to_string(),
-            evidence_id,
+            file_patterns,
+            evidence_id: evidence_id.clone(),
         });
+        self.add_relationship(
+            RelationshipKind::DefinesComponent,
+            "repo",
+            id,
+            evidence_id.clone(),
+        );
+        self.add_relationship(
+            RelationshipKind::EvidenceFor,
+            &evidence_id,
+            id,
+            evidence_id.clone(),
+        );
     }
 
     fn add_command(
@@ -318,6 +539,7 @@ impl RepoGraphBuilder {
         id: &str,
         kind: RepoCommandKind,
         command: &str,
+        scope_ref: Option<&str>,
         confidence: f32,
         evidence_id: String,
     ) {
@@ -334,9 +556,24 @@ impl RepoGraphBuilder {
             kind,
             command: command.to_string(),
             scope: ".".to_string(),
+            scope_ref: scope_ref.map(str::to_string),
             confidence,
-            evidence_id,
+            evidence_id: evidence_id.clone(),
         });
+        if let Some(scope_ref) = scope_ref {
+            self.add_relationship(
+                RelationshipKind::HasCommand,
+                scope_ref,
+                id,
+                evidence_id.clone(),
+            );
+        }
+        self.add_relationship(
+            RelationshipKind::EvidenceFor,
+            &evidence_id,
+            id,
+            evidence_id.clone(),
+        );
     }
 
     fn add_test(
@@ -344,6 +581,7 @@ impl RepoGraphBuilder {
         id: &str,
         name: &str,
         command: &str,
+        scope_ref: Option<&str>,
         confidence: f32,
         evidence_id: String,
     ) {
@@ -359,7 +597,45 @@ impl RepoGraphBuilder {
             id: id.to_string(),
             name: name.to_string(),
             command: command.to_string(),
+            scope: ".".to_string(),
+            scope_ref: scope_ref.map(str::to_string),
             confidence,
+            evidence_id: evidence_id.clone(),
+        });
+        if let Some(scope_ref) = scope_ref {
+            self.add_relationship(
+                RelationshipKind::HasTest,
+                scope_ref,
+                id,
+                evidence_id.clone(),
+            );
+            self.add_relationship(RelationshipKind::Tests, id, scope_ref, evidence_id.clone());
+        }
+        self.add_relationship(
+            RelationshipKind::EvidenceFor,
+            &evidence_id,
+            id,
+            evidence_id.clone(),
+        );
+    }
+
+    fn add_relationship(
+        &mut self,
+        kind: RelationshipKind,
+        src_id: &str,
+        dst_id: &str,
+        evidence_id: String,
+    ) {
+        let id = stable_relationship_id(&kind, src_id, dst_id);
+        if self.relationships.iter().any(|existing| existing.id == id) {
+            return;
+        }
+
+        self.relationships.push(Relationship {
+            id,
+            kind,
+            src_id: src_id.to_string(),
+            dst_id: dst_id.to_string(),
             evidence_id,
         });
     }
@@ -401,7 +677,19 @@ fn detect_rust(root: &Path, builder: &mut RepoGraphBuilder) {
                         name,
                         "rust_crate",
                         ".",
+                        vec![
+                            "Cargo.toml".to_string(),
+                            "Cargo.lock".to_string(),
+                            "src/**".to_string(),
+                            "tests/**".to_string(),
+                        ],
                         evidence_id,
+                    );
+                    builder.add_relationship(
+                        RelationshipKind::UsesPackageManager,
+                        "component-rust-package",
+                        "package-manager-cargo",
+                        manifest_evidence.clone(),
                     );
                 }
 
@@ -423,15 +711,16 @@ fn detect_rust(root: &Path, builder: &mut RepoGraphBuilder) {
                             Some("workspace.members"),
                             "Cargo workspace members.",
                         );
-                        builder.workspaces.push(Workspace {
-                            name: "cargo-workspace".to_string(),
-                            members: workspace_members,
+                        builder.add_workspace(
+                            "workspace-cargo",
+                            "cargo-workspace",
+                            workspace_members,
                             evidence_id,
-                        });
+                        );
                     }
                 }
 
-                detect_cargo_targets(&manifest, builder);
+                detect_cargo_targets(root, &manifest, builder);
             }
             Err(message) => builder.add_warning(
                 DetectionSeverity::Error,
@@ -461,6 +750,7 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         "cmd-cargo-check",
         RepoCommandKind::Check,
         "cargo check",
+        Some("repo"),
         0.95,
         manifest_evidence.clone(),
     );
@@ -468,6 +758,7 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         "cmd-cargo-test",
         RepoCommandKind::Test,
         "cargo test",
+        Some("repo"),
         0.95,
         manifest_evidence.clone(),
     );
@@ -475,6 +766,7 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         "cmd-cargo-build",
         RepoCommandKind::Build,
         "cargo build",
+        Some("repo"),
         0.9,
         manifest_evidence.clone(),
     );
@@ -482,6 +774,7 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         "cmd-cargo-clippy",
         RepoCommandKind::Lint,
         "cargo clippy -- -D warnings",
+        Some("repo"),
         0.8,
         manifest_evidence.clone(),
     );
@@ -489,6 +782,7 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         "cmd-cargo-fmt",
         RepoCommandKind::Format,
         "cargo fmt --check",
+        Some("repo"),
         0.8,
         manifest_evidence.clone(),
     );
@@ -496,12 +790,13 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         "test-cargo-test",
         "cargo test",
         "cargo test",
+        Some("repo"),
         0.95,
         manifest_evidence,
     );
 }
 
-fn detect_cargo_targets(manifest: &TomlValue, builder: &mut RepoGraphBuilder) {
+fn detect_cargo_targets(root: &Path, manifest: &TomlValue, builder: &mut RepoGraphBuilder) {
     if manifest.get("lib").is_some() {
         let evidence_id = builder.add_evidence(
             Path::new("Cargo.toml"),
@@ -514,6 +809,7 @@ fn detect_cargo_targets(manifest: &TomlValue, builder: &mut RepoGraphBuilder) {
             "lib",
             "rust_lib_target",
             ".",
+            cargo_lib_patterns(root, manifest),
             evidence_id,
         );
     }
@@ -532,6 +828,7 @@ fn detect_cargo_targets(manifest: &TomlValue, builder: &mut RepoGraphBuilder) {
                 name,
                 "rust_bin_target",
                 ".",
+                cargo_bin_patterns(root, bin),
                 evidence_id,
             );
         }
@@ -576,7 +873,19 @@ fn detect_node(root: &Path, builder: &mut RepoGraphBuilder) {
                         name,
                         "node_package",
                         ".",
+                        vec![
+                            "package.json".to_string(),
+                            "src/**".to_string(),
+                            "test/**".to_string(),
+                            "tests/**".to_string(),
+                        ],
                         evidence_id,
+                    );
+                    builder.add_relationship(
+                        RelationshipKind::UsesPackageManager,
+                        "component-node-package",
+                        "package-manager-npm",
+                        manifest_evidence.clone(),
                     );
                 }
 
@@ -588,11 +897,12 @@ fn detect_node(root: &Path, builder: &mut RepoGraphBuilder) {
                             Some("workspaces"),
                             "Node workspace members.",
                         );
-                        builder.workspaces.push(Workspace {
-                            name: "node-workspace".to_string(),
-                            members: workspaces,
+                        builder.add_workspace(
+                            "workspace-node",
+                            "node-workspace",
+                            workspaces,
                             evidence_id,
-                        });
+                        );
                     } else {
                         builder.add_warning(
                             DetectionSeverity::Warning,
@@ -674,11 +984,7 @@ fn detect_node(root: &Path, builder: &mut RepoGraphBuilder) {
         builder.add_package_manager(PackageManagerKind::Pnpm, "pnpm", evidence_id.clone());
         let members = parse_simple_yaml_packages(&pnpm_workspace);
         if !members.is_empty() {
-            builder.workspaces.push(Workspace {
-                name: "pnpm-workspace".to_string(),
-                members,
-                evidence_id,
-            });
+            builder.add_workspace("workspace-pnpm", "pnpm-workspace", members, evidence_id);
         } else {
             builder.add_warning(
                 DetectionSeverity::Warning,
@@ -734,6 +1040,12 @@ fn detect_python(root: &Path, builder: &mut RepoGraphBuilder) {
                         name,
                         "python_project",
                         ".",
+                        vec![
+                            "pyproject.toml".to_string(),
+                            "requirements.txt".to_string(),
+                            "src/**".to_string(),
+                            "tests/**".to_string(),
+                        ],
                         evidence_id,
                     );
                 }
@@ -853,16 +1165,29 @@ fn detect_go(root: &Path, builder: &mut RepoGraphBuilder) {
             &module_name,
             "go_module",
             ".",
+            vec![
+                "go.mod".to_string(),
+                "go.work".to_string(),
+                "*.go".to_string(),
+            ],
             evidence_id.clone(),
         );
         builder.add_command(
             "cmd-go-test",
             RepoCommandKind::Test,
             "go test ./...",
+            Some("component-go-module"),
             0.9,
             evidence_id.clone(),
         );
-        builder.add_test("test-go-test", "go test", "go test ./...", 0.9, evidence_id);
+        builder.add_test(
+            "test-go-test",
+            "go test",
+            "go test ./...",
+            Some("component-go-module"),
+            0.9,
+            evidence_id,
+        );
     }
 
     let go_work = root.join("go.work");
@@ -874,11 +1199,12 @@ fn detect_go(root: &Path, builder: &mut RepoGraphBuilder) {
             None,
             "Go workspace detected.",
         );
-        builder.workspaces.push(Workspace {
-            name: "go-workspace".to_string(),
-            members: Vec::new(),
-            evidence_id: evidence_id.clone(),
-        });
+        builder.add_workspace(
+            "workspace-go",
+            "go-workspace",
+            Vec::new(),
+            evidence_id.clone(),
+        );
         builder.add_warning(
             DetectionSeverity::Info,
             DetectionCategory::PartialSupport,
@@ -905,12 +1231,14 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
             "make-project",
             "generic_make_project",
             ".",
+            vec!["Makefile".to_string()],
             evidence_id.clone(),
         );
         builder.add_command(
             "cmd-make",
             RepoCommandKind::Other,
             "make",
+            Some("component-make-project"),
             0.5,
             evidence_id.clone(),
         );
@@ -921,6 +1249,7 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
                 "cmd-make-test",
                 RepoCommandKind::Test,
                 "make test",
+                Some("component-make-project"),
                 0.75,
                 evidence_id.clone(),
             );
@@ -928,6 +1257,7 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
                 "test-make-test",
                 "make test",
                 "make test",
+                Some("component-make-project"),
                 0.75,
                 evidence_id.clone(),
             );
@@ -965,12 +1295,14 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
             "just-project",
             "generic_just_project",
             ".",
+            vec!["justfile".to_string()],
             evidence_id.clone(),
         );
         builder.add_command(
             "cmd-just",
             RepoCommandKind::Other,
             "just",
+            Some("component-just-project"),
             0.5,
             evidence_id.clone(),
         );
@@ -981,6 +1313,7 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
                 "cmd-just-test",
                 RepoCommandKind::Test,
                 "just test",
+                Some("component-just-project"),
                 0.75,
                 evidence_id.clone(),
             );
@@ -988,6 +1321,7 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
                 "test-just-test",
                 "just test",
                 "just test",
+                Some("component-just-project"),
                 0.75,
                 evidence_id.clone(),
             );
@@ -1095,6 +1429,7 @@ fn add_node_script(
             &format!("cmd-npm-{script_name}"),
             kind.clone(),
             &command,
+            Some("component-node-package"),
             confidence,
             evidence_id.clone(),
         );
@@ -1103,6 +1438,7 @@ fn add_node_script(
                 &format!("test-npm-{script_name}"),
                 script_name,
                 &command,
+                Some("component-node-package"),
                 confidence,
                 evidence_id,
             );
@@ -1159,6 +1495,7 @@ fn add_pytest(builder: &mut RepoGraphBuilder, evidence_id: String) {
         "cmd-python-pytest",
         RepoCommandKind::Test,
         "python -m pytest",
+        Some("component-python-project"),
         0.75,
         evidence_id.clone(),
     );
@@ -1166,6 +1503,7 @@ fn add_pytest(builder: &mut RepoGraphBuilder, evidence_id: String) {
         "test-python-pytest",
         "pytest",
         "python -m pytest",
+        Some("component-python-project"),
         0.75,
         evidence_id,
     );
@@ -1280,6 +1618,173 @@ fn read_go_module_name(path: &Path) -> Option<String> {
             .filter(|name| !name.is_empty())
             .map(str::to_string)
     })
+}
+
+fn cargo_lib_patterns(root: &Path, manifest: &TomlValue) -> Vec<String> {
+    if let Some(path) = manifest
+        .get("lib")
+        .and_then(|lib| lib.get("path"))
+        .and_then(TomlValue::as_str)
+    {
+        return vec![path.to_string()];
+    }
+
+    if root.join("src/lib.rs").exists() {
+        vec!["src/lib.rs".to_string()]
+    } else {
+        Vec::new()
+    }
+}
+
+fn cargo_bin_patterns(root: &Path, bin: &TomlValue) -> Vec<String> {
+    if let Some(path) = bin.get("path").and_then(TomlValue::as_str) {
+        return vec![path.to_string()];
+    }
+
+    if root.join("src/main.rs").exists() {
+        vec!["src/main.rs".to_string()]
+    } else {
+        Vec::new()
+    }
+}
+
+fn normalize_changed_file(path: &str) -> String {
+    path.trim()
+        .trim_start_matches("./")
+        .replace('\\', "/")
+        .to_string()
+}
+
+fn is_broad_repo_change(repo_graph: &RepoInspection, changed_file: &str) -> bool {
+    repo_graph.detected_files.iter().any(|file| {
+        file.path == changed_file
+            && matches!(
+                file.kind,
+                DetectedFileKind::Manifest
+                    | DetectedFileKind::Lockfile
+                    | DetectedFileKind::WorkspaceConfig
+                    | DetectedFileKind::BuildConfig
+            )
+    })
+}
+
+fn component_matches_changed_file(component: &Component, changed_file: &str) -> bool {
+    component
+        .file_patterns
+        .iter()
+        .any(|pattern| path_matches_pattern(changed_file, pattern))
+}
+
+fn path_matches_pattern(path: &str, pattern: &str) -> bool {
+    if pattern == path {
+        return true;
+    }
+
+    if let Some(prefix) = pattern.strip_suffix("/**") {
+        return path == prefix || path.starts_with(&format!("{prefix}/"));
+    }
+
+    if let Some(suffix) = pattern.strip_prefix("*.") {
+        return path.ends_with(&format!(".{suffix}"));
+    }
+
+    false
+}
+
+fn command_applies_to_components(command: &RepoCommand, components: &[Component]) -> bool {
+    match command.scope_ref.as_deref() {
+        Some("repo") | None => true,
+        Some(scope_ref) => components.iter().any(|component| component.id == scope_ref),
+    }
+}
+
+fn test_applies_to_components(test: &TestTarget, components: &[Component]) -> bool {
+    match test.scope_ref.as_deref() {
+        Some("repo") | None => true,
+        Some(scope_ref) => components.iter().any(|component| component.id == scope_ref),
+    }
+}
+
+fn is_test_path(path: &str) -> bool {
+    path.starts_with("tests/")
+        || path.starts_with("test/")
+        || path.ends_with("_test.go")
+        || path.contains(".test.")
+        || path.contains(".spec.")
+}
+
+fn push_all_components(repo_graph: &RepoInspection, target: &mut Vec<Component>) {
+    for component in &repo_graph.components {
+        push_component(target, component.clone());
+    }
+}
+
+fn push_all_workspaces(repo_graph: &RepoInspection, target: &mut Vec<Workspace>) {
+    for workspace in &repo_graph.workspaces {
+        if !target.iter().any(|existing| existing.id == workspace.id) {
+            target.push(workspace.clone());
+        }
+    }
+}
+
+fn push_all_commands(repo_graph: &RepoInspection, target: &mut Vec<RepoCommand>) {
+    for command in &repo_graph.commands {
+        push_command(target, command.clone());
+    }
+}
+
+fn push_all_tests(repo_graph: &RepoInspection, target: &mut Vec<TestTarget>) {
+    for test in &repo_graph.tests {
+        push_test(target, test.clone());
+    }
+}
+
+fn push_component(target: &mut Vec<Component>, component: Component) {
+    if !target.iter().any(|existing| existing.id == component.id) {
+        target.push(component);
+    }
+}
+
+fn push_command(target: &mut Vec<RepoCommand>, command: RepoCommand) {
+    if !target.iter().any(|existing| existing.id == command.id) {
+        target.push(command);
+    }
+}
+
+fn push_test(target: &mut Vec<TestTarget>, test: TestTarget) {
+    if !target.iter().any(|existing| existing.id == test.id) {
+        target.push(test);
+    }
+}
+
+fn stable_id(prefix: &str, value: &str) -> String {
+    format!("{prefix}-{}", sanitize_id(value))
+}
+
+fn stable_relationship_id(kind: &RelationshipKind, src_id: &str, dst_id: &str) -> String {
+    format!(
+        "relationship-{}-{}-{}",
+        sanitize_id(&format!("{kind:?}")),
+        sanitize_id(src_id),
+        sanitize_id(dst_id)
+    )
+}
+
+fn sanitize_id(value: &str) -> String {
+    value
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .split('-')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
 }
 
 fn manifest_warning_category(message: &str) -> DetectionCategory {
