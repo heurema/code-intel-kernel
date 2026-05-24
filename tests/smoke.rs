@@ -1,7 +1,8 @@
 use code_intel_kernel::{
     analyze_impact, create_evidence_bundle, inspect_repo, DetectionCategory, DetectionSeverity,
-    EvidenceRequest, ImpactReport, ImpactStatus, KernelProfile, RepoInspection,
-    IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
+    EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport, ImpactScope, ImpactStatus,
+    KernelProfile, RelationshipKind, RepoInspection, IMPACT_CONTRACT_VERSION,
+    INSPECT_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
 use std::process::Command;
@@ -255,10 +256,15 @@ fn impact_for_rust_source_recommends_rust_commands() {
 
     assert_eq!(impact.contract_version, IMPACT_CONTRACT_VERSION);
     assert_eq!(impact.status, ImpactStatus::Partial);
-    assert!(impact
+    assert_eq!(impact.impact_scope, ImpactScope::Targeted);
+    assert_eq!(impact.confidence, ImpactConfidence::Medium);
+    let component = impact
         .impacted_components
         .iter()
-        .any(|component| component.name == "minimal-cargo"));
+        .find(|component| component.name == "minimal-cargo")
+        .expect("minimal-cargo component should be impacted");
+    assert_eq!(component.impact_kind, ImpactKind::Direct);
+    assert_eq!(component.distance, Some(0));
     assert!(impact
         .recommended_commands
         .iter()
@@ -272,7 +278,12 @@ fn impact_for_manifest_change_broadens_to_all_repo_commands() {
     let impact = analyze_impact(&graph, ["Cargo.toml"]);
 
     assert_eq!(impact.status, ImpactStatus::Partial);
+    assert_eq!(impact.impact_scope, ImpactScope::Broad);
     assert_eq!(impact.impacted_components.len(), graph.components.len());
+    assert!(impact
+        .impacted_components
+        .iter()
+        .all(|component| component.impact_kind == ImpactKind::Broad));
     assert_eq!(impact.recommended_commands.len(), graph.commands.len());
     assert_eq!(impact.recommended_tests.len(), graph.tests.len());
 }
@@ -285,7 +296,7 @@ fn impact_for_test_file_recommends_test_command() {
     assert!(impact
         .recommended_tests
         .iter()
-        .any(|test| test.command == "cargo test"));
+        .any(|test| test.command == "cargo test" && !test.reason.is_empty()));
 }
 
 #[test]
@@ -294,10 +305,84 @@ fn impact_for_unknown_file_is_insufficient_evidence() {
     let impact = analyze_impact(&graph, ["docs/unknown.md"]);
 
     assert_eq!(impact.status, ImpactStatus::InsufficientEvidence);
+    assert_eq!(impact.impact_scope, ImpactScope::Unknown);
+    assert_eq!(impact.confidence, ImpactConfidence::Insufficient);
     assert!(impact
         .warnings
         .iter()
         .any(|warning| warning.category == DetectionCategory::UnmappedChange));
+}
+
+#[test]
+fn impact_for_reverse_dependency_includes_transitive_dependents() {
+    let graph = inspect_repo("tests/fixtures/cargo-workspace-deps");
+    let impact = analyze_impact(&graph, ["crates/b/src/lib.rs"]);
+
+    assert!(graph
+        .relationships
+        .iter()
+        .any(|relationship| relationship.kind == RelationshipKind::DependsOn));
+
+    let direct = impact
+        .impacted_components
+        .iter()
+        .find(|component| component.name == "b")
+        .expect("changed crate should be directly impacted");
+    assert_eq!(direct.impact_kind, ImpactKind::Direct);
+
+    let transitive = impact
+        .impacted_components
+        .iter()
+        .find(|component| component.name == "a")
+        .expect("dependent crate should be transitively impacted");
+    assert_eq!(transitive.impact_kind, ImpactKind::Transitive);
+    assert_eq!(transitive.distance, Some(1));
+    assert!(transitive.evidence_ids.len() >= 2);
+}
+
+#[test]
+fn impact_does_not_claim_transitive_without_dependency_edges() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let impact = analyze_impact(&graph, ["src/lib.rs"]);
+
+    assert!(!impact
+        .impacted_components
+        .iter()
+        .any(|component| component.impact_kind == ImpactKind::Transitive));
+    assert!(impact
+        .limitations
+        .iter()
+        .any(|limitation| limitation.contains("No depends_on relationships")));
+}
+
+#[test]
+fn impact_recommendations_include_rank_reason_confidence_and_evidence() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let impact = analyze_impact(&graph, ["src/lib.rs"]);
+
+    let command = impact
+        .recommended_commands
+        .iter()
+        .find(|command| command.command == "cargo check")
+        .expect("cargo check should be recommended");
+    assert!(command.rank > 0);
+    assert!(!command.reason.is_empty());
+    assert_eq!(command.confidence, ImpactConfidence::Medium);
+    assert!(!command.evidence_ids.is_empty());
+}
+
+#[test]
+fn repeated_impact_output_has_stable_ordering() {
+    let graph = inspect_repo("tests/fixtures/minimal-cargo");
+    let first = analyze_impact(&graph, ["src/lib.rs", "Cargo.toml"]);
+    let second = analyze_impact(&graph, ["Cargo.toml", "src/lib.rs"]);
+
+    assert_eq!(first.changed_files, second.changed_files);
+    assert_eq!(first.impacted_components, second.impacted_components);
+    assert_eq!(first.impacted_workspaces, second.impacted_workspaces);
+    assert_eq!(first.recommended_commands, second.recommended_commands);
+    assert_eq!(first.recommended_tests, second.recommended_tests);
+    assert_eq!(first.warnings, second.warnings);
 }
 
 #[test]
@@ -433,19 +518,31 @@ fn assert_all_impact_facts_have_evidence(report: &ImpactReport) {
         .collect::<std::collections::BTreeSet<_>>();
 
     for component in &report.impacted_components {
-        assert!(evidence_ids.contains(component.evidence_id.as_str()));
+        assert!(!component.evidence_ids.is_empty());
+        for evidence_id in &component.evidence_ids {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
     }
 
     for workspace in &report.impacted_workspaces {
-        assert!(evidence_ids.contains(workspace.evidence_id.as_str()));
+        assert!(!workspace.evidence_ids.is_empty());
+        for evidence_id in &workspace.evidence_ids {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
     }
 
     for command in &report.recommended_commands {
-        assert!(evidence_ids.contains(command.evidence_id.as_str()));
+        assert!(!command.evidence_ids.is_empty());
+        for evidence_id in &command.evidence_ids {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
     }
 
     for test in &report.recommended_tests {
-        assert!(evidence_ids.contains(test.evidence_id.as_str()));
+        assert!(!test.evidence_ids.is_empty());
+        for evidence_id in &test.evidence_ids {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
     }
 }
 

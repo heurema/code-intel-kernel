@@ -1,6 +1,6 @@
 # Impact JSON Contract
 
-Status: Phase 1C RepoGraph-only contract draft.
+Status: Phase 1D RepoGraph-only contract draft.
 
 The `impact` command returns conservative repository/build/test-level impact from changed file paths. It does not perform symbol-level analysis.
 
@@ -20,8 +20,10 @@ cargo run --quiet -- impact --changed-files src/main.rs,Cargo.toml --json
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "status": "partial",
+  "impact_scope": "targeted",
+  "confidence": "medium",
   "changed_files": [],
   "impacted_components": [],
   "impacted_workspaces": [],
@@ -41,7 +43,25 @@ Known values:
 - `partial`: impact was produced, but it is conservative and RepoGraph-only.
 - `insufficient_evidence`: changed files could not be mapped to RepoGraph facts.
 
-Phase 1C usually returns `partial` for mapped changes because SymbolGraph is not implemented.
+Phase 1D still returns `partial` for mapped changes because impact is conservative and RepoGraph-only.
+
+## Impact scope
+
+Known values:
+
+- `targeted`: changed paths mapped to one or more components.
+- `broad`: a manifest, lockfile, workspace config, or build config changed.
+- `mixed`: targeted impact plus transitive RepoGraph impact.
+- `unknown`: no supported mapping was found.
+
+## Confidence
+
+Known values:
+
+- `high`: direct mapping and scoped command/test evidence are available.
+- `medium`: direct or transitive component mapping exists, but command/test recommendations are generic or repo-scoped.
+- `low`: only broad repository-level command evidence is available.
+- `insufficient`: no supported mapping was found.
 
 ## Inputs
 
@@ -53,21 +73,49 @@ Phase 1C usually returns `partial` for mapped changes because SymbolGraph is not
 
 Components whose `file_patterns` match changed files, or all components when a root manifest/build file changes.
 
+Each item has:
+
+- `component_id`
+- `name`
+- `kind`
+- `path`
+- `impact_kind`: `direct | transitive | broad | uncertain`
+- `distance`: `0` for direct, positive for reverse dependency traversal, or `null` for broad/uncertain impact.
+- `reason`: stable machine-readable reason string.
+- `evidence_ids`: existing evidence IDs from the copied `evidence` collection.
+
 ### impacted_workspaces
 
 Workspace entries affected by broad manifest/workspace changes when known.
+
+Each item has `workspace_id`, `name`, `impact_kind`, `distance`, `reason`, and `evidence_ids`.
 
 ### recommended_commands
 
 Commands whose scope applies to impacted components or to the repository root.
 
+Each item has:
+
+- `command_id`
+- `command`
+- `kind`
+- `scope_ref`
+- `rank`
+- `reason`
+- `confidence`
+- `evidence_ids`
+
+Ranking is deterministic. For manifest/build changes, check/build/static-analysis commands are ranked earlier than in targeted source changes. For targeted changes, scoped commands rank before repo-scoped commands when scopes are available.
+
 ### recommended_tests
 
 Test targets whose scope applies to impacted components or to changed test paths.
 
+Each item has `test_id`, `command`, `scope_ref`, `rank`, `reason`, `confidence`, and `evidence_ids`.
+
 ### evidence
 
-Evidence collection copied from `inspect`. Every impacted component, workspace, command, and test should reference an existing `evidence_id`.
+Evidence collection copied from `inspect`. Every impacted component, workspace, command, and test should reference one or more existing `evidence_ids`.
 
 ### warnings
 
@@ -77,11 +125,35 @@ Impact-specific categories include:
 
 - `repo_graph_only`: impact is path/build/test-level only.
 - `unmapped_change`: a changed path could not be mapped to a component or broad repo fact.
+- `partial_support`: dependency traversal or build-system extraction was not fully available.
+- `missing_command`: an impacted component had no known test target.
+
+## Relationships and traversal
+
+Phase 1D can follow explicit RepoGraph `depends_on` relationships in reverse to compute transitive impacted components.
+
+Currently emitted relationship kinds:
+
+- `defines_component`
+- `has_command`
+- `has_test`
+- `tests`
+- `belongs_to_workspace`
+- `depends_on` for explicit Cargo workspace path dependencies
+- `uses_package_manager`
+- `evidence_for`
+
+Defined but not broadly emitted yet:
+
+- `contains`
+
+No relationship is emitted without evidence.
 
 ## Conservative behavior
 
 - Source paths are matched against component `file_patterns`.
 - Manifest, lockfile, workspace, and build config changes broaden impact.
+- Reverse dependency traversal is used only when explicit `depends_on` edges exist.
 - Unknown paths return `insufficient_evidence` if nothing else maps.
 - Missing or unsupported data becomes a structured warning, not a guess.
 

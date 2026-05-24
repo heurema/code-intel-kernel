@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml::Value as TomlValue;
 
 pub const INSPECT_CONTRACT_VERSION: &str = "0.2";
-pub const IMPACT_CONTRACT_VERSION: &str = "0.1";
+pub const IMPACT_CONTRACT_VERSION: &str = "0.2";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -92,6 +93,33 @@ pub enum ImpactStatus {
     Ok,
     Partial,
     InsufficientEvidence,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ImpactKind {
+    Direct,
+    Transitive,
+    Broad,
+    Uncertain,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ImpactScope {
+    Targeted,
+    Broad,
+    Mixed,
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ImpactConfidence {
+    High,
+    Medium,
+    Low,
+    Insufficient,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -184,14 +212,61 @@ pub struct Relationship {
 pub struct ImpactReport {
     pub contract_version: String,
     pub status: ImpactStatus,
+    pub impact_scope: ImpactScope,
+    pub confidence: ImpactConfidence,
     pub changed_files: Vec<String>,
-    pub impacted_components: Vec<Component>,
-    pub impacted_workspaces: Vec<Workspace>,
-    pub recommended_commands: Vec<RepoCommand>,
-    pub recommended_tests: Vec<TestTarget>,
+    pub impacted_components: Vec<ImpactedComponent>,
+    pub impacted_workspaces: Vec<ImpactedWorkspace>,
+    pub recommended_commands: Vec<RecommendedCommand>,
+    pub recommended_tests: Vec<RecommendedTest>,
     pub evidence: Vec<Evidence>,
     pub warnings: Vec<DetectionIssue>,
     pub limitations: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImpactedComponent {
+    pub component_id: String,
+    pub name: String,
+    pub kind: String,
+    pub path: String,
+    pub impact_kind: ImpactKind,
+    pub distance: Option<u32>,
+    pub reason: String,
+    pub evidence_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImpactedWorkspace {
+    pub workspace_id: String,
+    pub name: String,
+    pub impact_kind: ImpactKind,
+    pub distance: Option<u32>,
+    pub reason: String,
+    pub evidence_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecommendedCommand {
+    pub command_id: String,
+    pub command: String,
+    pub kind: RepoCommandKind,
+    pub scope_ref: Option<String>,
+    pub rank: u32,
+    pub reason: String,
+    pub confidence: ImpactConfidence,
+    pub evidence_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RecommendedTest {
+    pub test_id: String,
+    pub command: String,
+    pub scope_ref: Option<String>,
+    pub rank: u32,
+    pub reason: String,
+    pub confidence: ImpactConfidence,
+    pub evidence_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -247,70 +322,162 @@ where
         .into_iter()
         .map(|file| normalize_changed_file(file.as_ref()))
         .filter(|file| !file.is_empty())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
         .collect::<Vec<_>>();
 
-    let mut impacted_components = Vec::<Component>::new();
-    let mut impacted_workspaces = Vec::<Workspace>::new();
-    let mut recommended_commands = Vec::<RepoCommand>::new();
-    let mut recommended_tests = Vec::<TestTarget>::new();
+    let mut impacted_components = BTreeMap::<String, ImpactedComponent>::new();
+    let mut impacted_workspaces = BTreeMap::<String, ImpactedWorkspace>::new();
     let mut warnings = repo_graph.warnings.clone();
-    warnings.push(DetectionIssue {
-        id: "impact-warning-1".to_string(),
-        severity: DetectionSeverity::Info,
-        category: DetectionCategory::RepoGraphOnly,
-        message: "SymbolGraph is not implemented; impact is based on repository structure and paths only.".to_string(),
-        path: None,
-        evidence_id: None,
-    });
+    push_impact_warning(
+        &mut warnings,
+        DetectionIssue {
+            id: "impact-warning-repo-graph-only".to_string(),
+            severity: DetectionSeverity::Info,
+            category: DetectionCategory::RepoGraphOnly,
+            message: "SymbolGraph is not implemented; impact is based on repository structure and paths only.".to_string(),
+            path: None,
+            evidence_id: None,
+        },
+    );
+
+    let mut broad_change_detected = false;
 
     for changed_file in &changed_files {
         if is_broad_repo_change(repo_graph, changed_file) {
-            push_all_components(repo_graph, &mut impacted_components);
-            push_all_workspaces(repo_graph, &mut impacted_workspaces);
-            push_all_commands(repo_graph, &mut recommended_commands);
-            push_all_tests(repo_graph, &mut recommended_tests);
+            broad_change_detected = true;
+            for component in &repo_graph.components {
+                insert_impacted_component(
+                    &mut impacted_components,
+                    component,
+                    ImpactKind::Broad,
+                    None,
+                    "manifest_or_build_file_changed",
+                    vec![component.evidence_id.clone()],
+                );
+            }
+            for workspace in &repo_graph.workspaces {
+                insert_impacted_workspace(
+                    &mut impacted_workspaces,
+                    workspace,
+                    ImpactKind::Broad,
+                    None,
+                    "manifest_or_build_file_changed",
+                    vec![workspace.evidence_id.clone()],
+                );
+            }
             continue;
         }
 
-        let matching_components = repo_graph
+        let mut matched_any = false;
+        for component in repo_graph
             .components
             .iter()
             .filter(|component| component_matches_changed_file(component, changed_file))
-            .cloned()
-            .collect::<Vec<_>>();
+        {
+            matched_any = true;
+            insert_impacted_component(
+                &mut impacted_components,
+                component,
+                ImpactKind::Direct,
+                Some(0),
+                if is_test_path(changed_file) {
+                    "test_path_matched_component_scope"
+                } else {
+                    "path_matched_component_scope"
+                },
+                vec![component.evidence_id.clone()],
+            );
+        }
 
-        if matching_components.is_empty() {
-            warnings.push(DetectionIssue {
-                id: format!("impact-warning-unmapped-{}", warnings.len() + 1),
-                severity: DetectionSeverity::Warning,
-                category: DetectionCategory::UnmappedChange,
-                message: "Changed file could not be mapped to a RepoGraph component.".to_string(),
-                path: Some(changed_file.clone()),
+        if !matched_any {
+            push_impact_warning(
+                &mut warnings,
+                DetectionIssue {
+                    id: format!("impact-warning-unmapped-{}", sanitize_id(changed_file)),
+                    severity: DetectionSeverity::Warning,
+                    category: DetectionCategory::UnmappedChange,
+                    message: "Changed file could not be mapped to a RepoGraph component."
+                        .to_string(),
+                    path: Some(changed_file.clone()),
+                    evidence_id: None,
+                },
+            );
+        }
+    }
+
+    let dependency_edges = repo_graph
+        .relationships
+        .iter()
+        .filter(|relationship| relationship.kind == RelationshipKind::DependsOn)
+        .collect::<Vec<_>>();
+
+    if dependency_edges.is_empty() {
+        push_impact_warning(
+            &mut warnings,
+            DetectionIssue {
+                id: "impact-warning-no-dependency-edges".to_string(),
+                severity: DetectionSeverity::Info,
+                category: DetectionCategory::PartialSupport,
+                message: "No depends_on relationships were available; transitive dependency impact was not computed.".to_string(),
+                path: None,
                 evidence_id: None,
-            });
-            continue;
-        }
-
-        for component in matching_components {
-            push_component(&mut impacted_components, component);
-        }
+            },
+        );
+    } else {
+        add_reverse_dependency_impacts(repo_graph, &dependency_edges, &mut impacted_components);
     }
 
-    if !impacted_components.is_empty() {
-        for command in &repo_graph.commands {
-            if command_applies_to_components(command, &impacted_components) {
-                push_command(&mut recommended_commands, command.clone());
-            }
-        }
-
-        for test in &repo_graph.tests {
-            if test_applies_to_components(test, &impacted_components)
-                || changed_files.iter().any(|file| is_test_path(file))
-            {
-                push_test(&mut recommended_tests, test.clone());
-            }
-        }
+    for workspace in workspaces_for_components(repo_graph, impacted_components.keys()) {
+        insert_impacted_workspace(
+            &mut impacted_workspaces,
+            workspace,
+            if broad_change_detected {
+                ImpactKind::Broad
+            } else {
+                ImpactKind::Direct
+            },
+            if broad_change_detected { None } else { Some(0) },
+            if broad_change_detected {
+                "manifest_or_build_file_changed"
+            } else {
+                "component_belongs_to_workspace"
+            },
+            vec![workspace.evidence_id.clone()],
+        );
     }
+
+    let impacted_components = impacted_components.into_values().collect::<Vec<_>>();
+    let impacted_workspaces = impacted_workspaces.into_values().collect::<Vec<_>>();
+    let recommended_tests = recommend_tests(
+        repo_graph,
+        &changed_files,
+        &impacted_components,
+        broad_change_detected,
+    );
+    let recommended_commands = recommend_commands(
+        repo_graph,
+        &impacted_components,
+        !recommended_tests.is_empty(),
+        broad_change_detected,
+    );
+
+    if !impacted_components.is_empty() && recommended_tests.is_empty() {
+        push_impact_warning(
+            &mut warnings,
+            DetectionIssue {
+                id: "impact-warning-no-test-command".to_string(),
+                severity: DetectionSeverity::Warning,
+                category: DetectionCategory::MissingCommand,
+                message: "Impacted components were found, but no test target was available."
+                    .to_string(),
+                path: None,
+                evidence_id: None,
+            },
+        );
+    }
+
+    warnings.sort_by(|a, b| a.id.cmp(&b.id));
 
     let status = if impacted_components.is_empty()
         && impacted_workspaces.is_empty()
@@ -321,10 +488,31 @@ where
     } else {
         ImpactStatus::Partial
     };
+    let impact_scope = impact_scope(&impacted_components, broad_change_detected);
+    let confidence = impact_confidence(
+        status.clone(),
+        &impacted_components,
+        &recommended_commands,
+        &recommended_tests,
+    );
+
+    let mut limitations = vec![
+        "RepoGraph-only impact analysis; no symbols, imports, definitions, references, or call graph are used.".to_string(),
+        "Recommendations are conservative and based on path containment, manifests, command scopes, test scopes, and explicit RepoGraph dependency edges.".to_string(),
+    ];
+
+    if dependency_edges.is_empty() {
+        limitations.push(
+            "No depends_on relationships were available; no transitive dependency closure was computed."
+                .to_string(),
+        );
+    }
 
     ImpactReport {
         contract_version: IMPACT_CONTRACT_VERSION.to_string(),
         status,
+        impact_scope,
+        confidence,
         changed_files,
         impacted_components,
         impacted_workspaces,
@@ -332,11 +520,474 @@ where
         recommended_tests,
         evidence: repo_graph.evidence.clone(),
         warnings,
-        limitations: vec![
-            "RepoGraph-only impact analysis; no symbols, imports, definitions, references, or call graph are used.".to_string(),
-            "Recommendations are conservative and based on path containment, manifests, command scopes, and test scopes.".to_string(),
-        ],
+        limitations,
     }
+}
+
+fn push_impact_warning(warnings: &mut Vec<DetectionIssue>, warning: DetectionIssue) {
+    if !warnings.iter().any(|existing| existing.id == warning.id) {
+        warnings.push(warning);
+    }
+}
+
+fn insert_impacted_component(
+    target: &mut BTreeMap<String, ImpactedComponent>,
+    component: &Component,
+    impact_kind: ImpactKind,
+    distance: Option<u32>,
+    reason: &str,
+    evidence_ids: Vec<String>,
+) {
+    let candidate = ImpactedComponent {
+        component_id: component.id.clone(),
+        name: component.name.clone(),
+        kind: component.kind.clone(),
+        path: component.path.clone(),
+        impact_kind,
+        distance,
+        reason: reason.to_string(),
+        evidence_ids: stable_evidence_ids(evidence_ids),
+    };
+
+    match target.get(&candidate.component_id) {
+        Some(existing) if impact_priority(existing) <= impact_priority(&candidate) => {}
+        _ => {
+            target.insert(candidate.component_id.clone(), candidate);
+        }
+    }
+}
+
+fn insert_impacted_workspace(
+    target: &mut BTreeMap<String, ImpactedWorkspace>,
+    workspace: &Workspace,
+    impact_kind: ImpactKind,
+    distance: Option<u32>,
+    reason: &str,
+    evidence_ids: Vec<String>,
+) {
+    let candidate = ImpactedWorkspace {
+        workspace_id: workspace.id.clone(),
+        name: workspace.name.clone(),
+        impact_kind,
+        distance,
+        reason: reason.to_string(),
+        evidence_ids: stable_evidence_ids(evidence_ids),
+    };
+
+    match target.get(&candidate.workspace_id) {
+        Some(existing)
+            if workspace_impact_priority(existing) <= workspace_impact_priority(&candidate) => {}
+        _ => {
+            target.insert(candidate.workspace_id.clone(), candidate);
+        }
+    }
+}
+
+fn stable_evidence_ids(evidence_ids: Vec<String>) -> Vec<String> {
+    evidence_ids
+        .into_iter()
+        .filter(|id| !id.is_empty())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+fn impact_priority(component: &ImpactedComponent) -> (u8, u32, &str) {
+    (
+        impact_kind_rank(&component.impact_kind),
+        component.distance.unwrap_or(u32::MAX),
+        component.component_id.as_str(),
+    )
+}
+
+fn workspace_impact_priority(workspace: &ImpactedWorkspace) -> (u8, u32, &str) {
+    (
+        impact_kind_rank(&workspace.impact_kind),
+        workspace.distance.unwrap_or(u32::MAX),
+        workspace.workspace_id.as_str(),
+    )
+}
+
+fn impact_kind_rank(kind: &ImpactKind) -> u8 {
+    match kind {
+        ImpactKind::Direct => 0,
+        ImpactKind::Broad => 1,
+        ImpactKind::Transitive => 2,
+        ImpactKind::Uncertain => 3,
+    }
+}
+
+fn add_reverse_dependency_impacts(
+    repo_graph: &RepoInspection,
+    dependency_edges: &[&Relationship],
+    impacted_components: &mut BTreeMap<String, ImpactedComponent>,
+) {
+    let components_by_id = repo_graph
+        .components
+        .iter()
+        .map(|component| (component.id.as_str(), component))
+        .collect::<BTreeMap<_, _>>();
+    let mut reverse_edges = BTreeMap::<&str, Vec<&Relationship>>::new();
+
+    for edge in dependency_edges {
+        reverse_edges
+            .entry(edge.dst_id.as_str())
+            .or_default()
+            .push(*edge);
+    }
+
+    for edges in reverse_edges.values_mut() {
+        edges.sort_by(|a, b| a.src_id.cmp(&b.src_id));
+    }
+
+    let roots = impacted_components
+        .values()
+        .filter(|component| {
+            matches!(
+                component.impact_kind,
+                ImpactKind::Direct | ImpactKind::Broad
+            )
+        })
+        .map(|component| {
+            (
+                component.component_id.clone(),
+                component.distance.unwrap_or(0),
+            )
+        })
+        .collect::<Vec<_>>();
+    let mut queue = roots.into_iter().collect::<VecDeque<_>>();
+    let mut seen = impacted_components
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<String>>();
+
+    while let Some((component_id, distance)) = queue.pop_front() {
+        let Some(edges) = reverse_edges.get(component_id.as_str()) else {
+            continue;
+        };
+
+        for edge in edges {
+            if !seen.insert(edge.src_id.clone()) {
+                continue;
+            }
+            let Some(component) = components_by_id.get(edge.src_id.as_str()) else {
+                continue;
+            };
+            let next_distance = distance.saturating_add(1);
+            insert_impacted_component(
+                impacted_components,
+                component,
+                ImpactKind::Transitive,
+                Some(next_distance),
+                "reverse_dependency",
+                vec![component.evidence_id.clone(), edge.evidence_id.clone()],
+            );
+            queue.push_back((edge.src_id.clone(), next_distance));
+        }
+    }
+}
+
+fn workspaces_for_components<'a>(
+    repo_graph: &'a RepoInspection,
+    component_ids: impl Iterator<Item = &'a String>,
+) -> Vec<&'a Workspace> {
+    let impacted_component_ids = component_ids.collect::<BTreeSet<_>>();
+    let workspace_ids = repo_graph
+        .relationships
+        .iter()
+        .filter(|relationship| relationship.kind == RelationshipKind::BelongsToWorkspace)
+        .filter(|relationship| impacted_component_ids.contains(&relationship.src_id))
+        .map(|relationship| relationship.dst_id.as_str())
+        .collect::<BTreeSet<_>>();
+
+    repo_graph
+        .workspaces
+        .iter()
+        .filter(|workspace| workspace_ids.contains(workspace.id.as_str()))
+        .collect()
+}
+
+fn recommend_tests(
+    repo_graph: &RepoInspection,
+    changed_files: &[String],
+    impacted_components: &[ImpactedComponent],
+    broad_change_detected: bool,
+) -> Vec<RecommendedTest> {
+    let mut tests = repo_graph
+        .tests
+        .iter()
+        .filter(|test| {
+            broad_change_detected
+                || test_applies_to_impacted_components(test, impacted_components)
+                || changed_files.iter().any(|file| is_test_path(file))
+        })
+        .map(|test| {
+            let scoped = test_scope_matches_impacted_component(test, impacted_components);
+            RecommendedTest {
+                test_id: test.id.clone(),
+                command: test.command.clone(),
+                scope_ref: test.scope_ref.clone(),
+                rank: test_rank(test, broad_change_detected, scoped),
+                reason: if broad_change_detected {
+                    "broad_change_requires_test_command".to_string()
+                } else if scoped {
+                    "test_scope_matches_impacted_component".to_string()
+                } else if changed_files.iter().any(|file| is_test_path(file)) {
+                    "changed_file_is_test_path".to_string()
+                } else {
+                    "generic_test_command_for_impacted_component".to_string()
+                },
+                confidence: if scoped {
+                    ImpactConfidence::High
+                } else if impacted_components.is_empty() {
+                    ImpactConfidence::Low
+                } else {
+                    ImpactConfidence::Medium
+                },
+                evidence_ids: stable_evidence_ids(vec![test.evidence_id.clone()]),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    tests.sort_by(|a, b| {
+        a.rank
+            .cmp(&b.rank)
+            .then_with(|| a.test_id.cmp(&b.test_id))
+            .then_with(|| a.command.cmp(&b.command))
+    });
+    tests
+}
+
+fn recommend_commands(
+    repo_graph: &RepoInspection,
+    impacted_components: &[ImpactedComponent],
+    has_recommended_tests: bool,
+    broad_change_detected: bool,
+) -> Vec<RecommendedCommand> {
+    let mut commands = repo_graph
+        .commands
+        .iter()
+        .filter(|command| {
+            broad_change_detected
+                || command_applies_to_impacted_components(command, impacted_components)
+        })
+        .map(|command| {
+            let scoped = command_scope_matches_impacted_component(command, impacted_components);
+            RecommendedCommand {
+                command_id: command.id.clone(),
+                command: command.command.clone(),
+                kind: command.kind.clone(),
+                scope_ref: command.scope_ref.clone(),
+                rank: command_rank(
+                    command,
+                    broad_change_detected,
+                    scoped,
+                    has_recommended_tests,
+                ),
+                reason: command_reason(command, broad_change_detected, scoped),
+                confidence: if scoped {
+                    ImpactConfidence::High
+                } else if impacted_components.is_empty() {
+                    ImpactConfidence::Low
+                } else {
+                    ImpactConfidence::Medium
+                },
+                evidence_ids: stable_evidence_ids(vec![command.evidence_id.clone()]),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    commands.sort_by(|a, b| {
+        a.rank
+            .cmp(&b.rank)
+            .then_with(|| a.command_id.cmp(&b.command_id))
+            .then_with(|| a.command.cmp(&b.command))
+    });
+    commands
+}
+
+fn test_rank(test: &TestTarget, broad_change_detected: bool, scoped: bool) -> u32 {
+    if broad_change_detected {
+        return 10;
+    }
+    if scoped {
+        return 10;
+    }
+    match test.scope_ref.as_deref() {
+        Some("repo") | None => 20,
+        Some(_) => 30,
+    }
+}
+
+fn command_rank(
+    command: &RepoCommand,
+    broad_change_detected: bool,
+    scoped: bool,
+    has_recommended_tests: bool,
+) -> u32 {
+    let base = if broad_change_detected {
+        match command.kind {
+            RepoCommandKind::Check => 10,
+            RepoCommandKind::Test => 20,
+            RepoCommandKind::Build => 30,
+            RepoCommandKind::Lint | RepoCommandKind::Typecheck => 40,
+            RepoCommandKind::Format => 50,
+            RepoCommandKind::Other => 90,
+        }
+    } else {
+        match command.kind {
+            RepoCommandKind::Test if !has_recommended_tests => 10,
+            RepoCommandKind::Check => 20,
+            RepoCommandKind::Test => 30,
+            RepoCommandKind::Lint | RepoCommandKind::Typecheck => 40,
+            RepoCommandKind::Build => 50,
+            RepoCommandKind::Format => 60,
+            RepoCommandKind::Other => 90,
+        }
+    };
+
+    if scoped {
+        base
+    } else {
+        base + 5
+    }
+}
+
+fn command_reason(command: &RepoCommand, broad_change_detected: bool, scoped: bool) -> String {
+    if broad_change_detected {
+        return match command.kind {
+            RepoCommandKind::Check => "manifest_change_may_affect_compile_graph".to_string(),
+            RepoCommandKind::Test => "manifest_change_may_affect_test_graph".to_string(),
+            RepoCommandKind::Build => "manifest_change_may_affect_build_graph".to_string(),
+            RepoCommandKind::Lint | RepoCommandKind::Typecheck => {
+                "manifest_change_may_affect_static_analysis".to_string()
+            }
+            RepoCommandKind::Format | RepoCommandKind::Other => {
+                "broad_change_matches_command_scope".to_string()
+            }
+        };
+    }
+
+    if scoped {
+        "command_scope_matches_impacted_component".to_string()
+    } else {
+        "generic_command_for_impacted_component".to_string()
+    }
+}
+
+fn impact_scope(
+    impacted_components: &[ImpactedComponent],
+    broad_change_detected: bool,
+) -> ImpactScope {
+    if broad_change_detected {
+        return ImpactScope::Broad;
+    }
+
+    if impacted_components.is_empty() {
+        return ImpactScope::Unknown;
+    }
+
+    if impacted_components
+        .iter()
+        .any(|component| component.impact_kind == ImpactKind::Transitive)
+    {
+        ImpactScope::Mixed
+    } else {
+        ImpactScope::Targeted
+    }
+}
+
+fn impact_confidence(
+    status: ImpactStatus,
+    impacted_components: &[ImpactedComponent],
+    recommended_commands: &[RecommendedCommand],
+    recommended_tests: &[RecommendedTest],
+) -> ImpactConfidence {
+    if status == ImpactStatus::InsufficientEvidence {
+        return ImpactConfidence::Insufficient;
+    }
+
+    if recommended_commands
+        .iter()
+        .any(|command| command.confidence == ImpactConfidence::High)
+        || recommended_tests
+            .iter()
+            .any(|test| test.confidence == ImpactConfidence::High)
+    {
+        return ImpactConfidence::High;
+    }
+
+    if impacted_components.iter().any(|component| {
+        matches!(
+            component.impact_kind,
+            ImpactKind::Direct | ImpactKind::Transitive
+        )
+    }) {
+        return ImpactConfidence::Medium;
+    }
+
+    ImpactConfidence::Low
+}
+
+fn command_applies_to_impacted_components(
+    command: &RepoCommand,
+    components: &[ImpactedComponent],
+) -> bool {
+    match command.scope_ref.as_deref() {
+        Some("repo") | None => !components.is_empty(),
+        Some(scope_ref) => components
+            .iter()
+            .any(|component| component.component_id == scope_ref),
+    }
+}
+
+fn test_applies_to_impacted_components(
+    test: &TestTarget,
+    components: &[ImpactedComponent],
+) -> bool {
+    match test.scope_ref.as_deref() {
+        Some("repo") | None => !components.is_empty(),
+        Some(scope_ref) => components
+            .iter()
+            .any(|component| component.component_id == scope_ref),
+    }
+}
+
+fn command_scope_matches_impacted_component(
+    command: &RepoCommand,
+    components: &[ImpactedComponent],
+) -> bool {
+    command.scope_ref.as_deref().is_some_and(|scope_ref| {
+        scope_ref != "repo"
+            && components
+                .iter()
+                .any(|component| component.component_id == scope_ref)
+    })
+}
+
+fn test_scope_matches_impacted_component(
+    test: &TestTarget,
+    components: &[ImpactedComponent],
+) -> bool {
+    test.scope_ref.as_deref().is_some_and(|scope_ref| {
+        scope_ref != "repo"
+            && components
+                .iter()
+                .any(|component| component.component_id == scope_ref)
+    })
+}
+
+struct CargoWorkspaceMember {
+    relative_manifest: PathBuf,
+    package_name: String,
+    component_id: String,
+    manifest: TomlValue,
+}
+
+struct CargoDependency {
+    name: String,
+    field: String,
+    path_dependency: bool,
 }
 
 struct RepoGraphBuilder {
@@ -702,6 +1353,8 @@ fn detect_rust(root: &Path, builder: &mut RepoGraphBuilder) {
                         .iter()
                         .filter_map(TomlValue::as_str)
                         .map(str::to_string)
+                        .collect::<BTreeSet<_>>()
+                        .into_iter()
                         .collect::<Vec<_>>();
 
                     if !workspace_members.is_empty() {
@@ -714,8 +1367,14 @@ fn detect_rust(root: &Path, builder: &mut RepoGraphBuilder) {
                         builder.add_workspace(
                             "workspace-cargo",
                             "cargo-workspace",
-                            workspace_members,
-                            evidence_id,
+                            workspace_members.clone(),
+                            evidence_id.clone(),
+                        );
+                        detect_cargo_workspace_members(
+                            root,
+                            &workspace_members,
+                            &evidence_id,
+                            builder,
                         );
                     }
                 }
@@ -794,6 +1453,136 @@ fn add_cargo_commands(builder: &mut RepoGraphBuilder, manifest_evidence: String)
         0.95,
         manifest_evidence,
     );
+}
+
+fn detect_cargo_workspace_members(
+    root: &Path,
+    workspace_members: &[String],
+    workspace_evidence_id: &str,
+    builder: &mut RepoGraphBuilder,
+) {
+    let mut members = Vec::<CargoWorkspaceMember>::new();
+
+    for member in workspace_members {
+        let relative_manifest = PathBuf::from(member).join("Cargo.toml");
+        let absolute_manifest = root.join(&relative_manifest);
+
+        if !absolute_manifest.exists() {
+            builder.add_warning(
+                DetectionSeverity::Warning,
+                DetectionCategory::UnsupportedPattern,
+                "Cargo workspace member was listed, but its Cargo.toml was not found.",
+                Some(&relative_manifest),
+                Some(workspace_evidence_id.to_string()),
+            );
+            continue;
+        }
+
+        let manifest_evidence = builder.add_detected_file(
+            &relative_manifest,
+            DetectedFileKind::Manifest,
+            "manifest",
+            None,
+            "Cargo workspace member manifest detected.",
+        );
+
+        match read_toml(&absolute_manifest) {
+            Ok(manifest) => {
+                let Some(package_name) = manifest
+                    .get("package")
+                    .and_then(|package| package.get("name"))
+                    .and_then(TomlValue::as_str)
+                    .map(str::to_string)
+                else {
+                    builder.add_warning(
+                        DetectionSeverity::Warning,
+                        DetectionCategory::UnsupportedPattern,
+                        "Cargo workspace member manifest did not define package.name.",
+                        Some(&relative_manifest),
+                        Some(manifest_evidence.clone()),
+                    );
+                    continue;
+                };
+
+                let component_id = stable_id("component-rust-crate", &package_name);
+                let package_name_field = format!("{}/package.name", member);
+                let component_evidence = builder.add_evidence(
+                    &relative_manifest,
+                    "manifest",
+                    Some(&package_name_field),
+                    "Cargo workspace member package name.",
+                );
+                builder.add_component(
+                    &component_id,
+                    &package_name,
+                    "rust_crate",
+                    member,
+                    vec![
+                        normalize_path(&relative_manifest),
+                        format!("{member}/src/**"),
+                        format!("{member}/tests/**"),
+                    ],
+                    component_evidence.clone(),
+                );
+                builder.add_relationship(
+                    RelationshipKind::BelongsToWorkspace,
+                    &component_id,
+                    "workspace-cargo",
+                    component_evidence.clone(),
+                );
+                builder.add_relationship(
+                    RelationshipKind::UsesPackageManager,
+                    &component_id,
+                    "package-manager-cargo",
+                    manifest_evidence,
+                );
+
+                members.push(CargoWorkspaceMember {
+                    relative_manifest,
+                    package_name,
+                    component_id,
+                    manifest,
+                });
+            }
+            Err(message) => builder.add_warning(
+                DetectionSeverity::Error,
+                manifest_warning_category(&message),
+                &message,
+                Some(&relative_manifest),
+                Some(manifest_evidence),
+            ),
+        }
+    }
+
+    let component_by_name = members
+        .iter()
+        .map(|member| (member.package_name.as_str(), member.component_id.as_str()))
+        .collect::<BTreeMap<_, _>>();
+
+    for member in &members {
+        for dependency in cargo_dependencies(&member.manifest) {
+            if !dependency.path_dependency {
+                continue;
+            }
+            let Some(dependency_component_id) = component_by_name.get(dependency.name.as_str())
+            else {
+                continue;
+            };
+
+            let evidence_id = builder.add_evidence(
+                &member.relative_manifest,
+                "manifest",
+                Some(&dependency.field),
+                "Cargo workspace path dependency.",
+            );
+            builder.add_relationship(
+                RelationshipKind::DependsOn,
+                &member.component_id,
+                dependency_component_id,
+                evidence_id,
+            );
+        }
+    }
 }
 
 fn detect_cargo_targets(root: &Path, manifest: &TomlValue, builder: &mut RepoGraphBuilder) {
@@ -1208,7 +1997,7 @@ fn detect_go(root: &Path, builder: &mut RepoGraphBuilder) {
         builder.add_warning(
             DetectionSeverity::Info,
             DetectionCategory::PartialSupport,
-            "go.work was detected but workspace members are not parsed in Phase 1B.",
+            "go.work was detected but workspace members are not parsed yet.",
             Some(Path::new("go.work")),
             Some(evidence_id),
         );
@@ -1274,7 +2063,7 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
         builder.add_warning(
             DetectionSeverity::Info,
             DetectionCategory::PartialSupport,
-            "Makefile target parsing is shallow in Phase 1B.",
+            "Makefile target parsing is shallow.",
             Some(Path::new("Makefile")),
             Some(evidence_id),
         );
@@ -1338,7 +2127,7 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
         builder.add_warning(
             DetectionSeverity::Info,
             DetectionCategory::PartialSupport,
-            "justfile recipe parsing is shallow in Phase 1B.",
+            "justfile recipe parsing is shallow.",
             Some(Path::new("justfile")),
             Some(evidence_id),
         );
@@ -1648,6 +2437,28 @@ fn cargo_bin_patterns(root: &Path, bin: &TomlValue) -> Vec<String> {
     }
 }
 
+fn cargo_dependencies(manifest: &TomlValue) -> Vec<CargoDependency> {
+    let mut dependencies = Vec::new();
+    for section_name in ["dependencies", "dev-dependencies", "build-dependencies"] {
+        let Some(section) = manifest.get(section_name).and_then(TomlValue::as_table) else {
+            continue;
+        };
+
+        for (name, value) in section {
+            dependencies.push(CargoDependency {
+                name: name.to_string(),
+                field: format!("{section_name}.{name}"),
+                path_dependency: value
+                    .as_table()
+                    .is_some_and(|dependency| dependency.contains_key("path")),
+            });
+        }
+    }
+
+    dependencies.sort_by(|a, b| a.field.cmp(&b.field));
+    dependencies
+}
+
 fn normalize_changed_file(path: &str) -> String {
     path.trim()
         .trim_start_matches("./")
@@ -1691,70 +2502,12 @@ fn path_matches_pattern(path: &str, pattern: &str) -> bool {
     false
 }
 
-fn command_applies_to_components(command: &RepoCommand, components: &[Component]) -> bool {
-    match command.scope_ref.as_deref() {
-        Some("repo") | None => true,
-        Some(scope_ref) => components.iter().any(|component| component.id == scope_ref),
-    }
-}
-
-fn test_applies_to_components(test: &TestTarget, components: &[Component]) -> bool {
-    match test.scope_ref.as_deref() {
-        Some("repo") | None => true,
-        Some(scope_ref) => components.iter().any(|component| component.id == scope_ref),
-    }
-}
-
 fn is_test_path(path: &str) -> bool {
     path.starts_with("tests/")
         || path.starts_with("test/")
         || path.ends_with("_test.go")
         || path.contains(".test.")
         || path.contains(".spec.")
-}
-
-fn push_all_components(repo_graph: &RepoInspection, target: &mut Vec<Component>) {
-    for component in &repo_graph.components {
-        push_component(target, component.clone());
-    }
-}
-
-fn push_all_workspaces(repo_graph: &RepoInspection, target: &mut Vec<Workspace>) {
-    for workspace in &repo_graph.workspaces {
-        if !target.iter().any(|existing| existing.id == workspace.id) {
-            target.push(workspace.clone());
-        }
-    }
-}
-
-fn push_all_commands(repo_graph: &RepoInspection, target: &mut Vec<RepoCommand>) {
-    for command in &repo_graph.commands {
-        push_command(target, command.clone());
-    }
-}
-
-fn push_all_tests(repo_graph: &RepoInspection, target: &mut Vec<TestTarget>) {
-    for test in &repo_graph.tests {
-        push_test(target, test.clone());
-    }
-}
-
-fn push_component(target: &mut Vec<Component>, component: Component) {
-    if !target.iter().any(|existing| existing.id == component.id) {
-        target.push(component);
-    }
-}
-
-fn push_command(target: &mut Vec<RepoCommand>, command: RepoCommand) {
-    if !target.iter().any(|existing| existing.id == command.id) {
-        target.push(command);
-    }
-}
-
-fn push_test(target: &mut Vec<TestTarget>, test: TestTarget) {
-    if !target.iter().any(|existing| existing.id == test.id) {
-        target.push(test);
-    }
 }
 
 fn stable_id(prefix: &str, value: &str) -> String {

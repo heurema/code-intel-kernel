@@ -29,12 +29,20 @@
 - Add fixtures for partial and ambiguous manifests.
 - Do not add Tree-sitter, LSP, SQLite, MCP, embeddings, workspace split, or xtask yet.
 
-## Phase 1D: RepoGraph depth before symbols
+## Phase 1D: RepoGraph impact traversal
+
+- Add direct, transitive, broad, and uncertain impact classifications.
+- Add reverse dependency traversal over explicit RepoGraph `depends_on` edges.
+- Add command/test recommendation ranking, reasons, confidence, and evidence IDs.
+- Keep impact analysis RepoGraph-only until behavior is stable on real repositories.
+- Keep `where-to-edit` as `insufficient_evidence`.
+
+## Phase 1E: RepoGraph extraction quality
 
 - Improve command inference across Cargo, Node, Python, Go, Make, just, and workflows.
 - Improve workspace/component relationships and dependency edges when manifest evidence is explicit.
 - Add more fixtures for ambiguous and partially supported build systems.
-- Keep impact analysis RepoGraph-only until behavior is stable on real repositories.
+- Add lightweight benchmark or quality tasks for inspect/impact behavior.
 - Consider storage only after the in-memory graph output has proven stable.
 
 ## Phase 2: SymbolGraph MVP

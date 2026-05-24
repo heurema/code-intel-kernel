@@ -1,6 +1,6 @@
 # Inspect JSON Contract
 
-Status: Phase 1B stable contract draft.
+Status: Phase 1D inspect contract, version 0.2.
 
 The `inspect` command returns repository/build/test-level facts only. It does not perform symbol-level analysis, LSP diagnostics, code search, impact analysis, or MCP/tool routing.
 
@@ -111,7 +111,7 @@ Repository-level components such as crates, packages, modules, or generic build 
 }
 ```
 
-Components are not symbols. A Rust crate or Node package may be a component; a function or class is not included in Phase 1B.
+Components are not symbols. A Rust crate or Node package may be a component; a function or class is not included yet.
 
 `file_patterns` are RepoGraph-level path scopes. They are not source-level symbol ownership.
 
