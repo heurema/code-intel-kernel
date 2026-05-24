@@ -990,6 +990,11 @@ struct CargoDependency {
     path_dependency: bool,
 }
 
+struct CommandFileTargets {
+    targets: Vec<String>,
+    ambiguous_lines: usize,
+}
+
 struct RepoGraphBuilder {
     repo_root: String,
     next_evidence: usize,
@@ -1163,6 +1168,10 @@ impl RepoGraphBuilder {
         file_patterns: Vec<String>,
         evidence_id: String,
     ) {
+        if self.components.iter().any(|existing| existing.id == id) {
+            return;
+        }
+
         self.components.push(Component {
             id: id.to_string(),
             name: name.to_string(),
@@ -1312,11 +1321,12 @@ fn detect_rust(root: &Path, builder: &mut RepoGraphBuilder) {
             Ok(manifest) => {
                 add_cargo_commands(builder, manifest_evidence.clone());
 
-                if let Some(name) = manifest
+                let package_name = manifest
                     .get("package")
                     .and_then(|package| package.get("name"))
-                    .and_then(TomlValue::as_str)
-                {
+                    .and_then(TomlValue::as_str);
+
+                if let Some(name) = package_name {
                     let evidence_id = builder.add_evidence(
                         Path::new("Cargo.toml"),
                         "manifest",
@@ -1379,7 +1389,7 @@ fn detect_rust(root: &Path, builder: &mut RepoGraphBuilder) {
                     }
                 }
 
-                detect_cargo_targets(root, &manifest, builder);
+                detect_cargo_targets(root, &manifest, package_name, builder);
             }
             Err(message) => builder.add_warning(
                 DetectionSeverity::Error,
@@ -1585,7 +1595,12 @@ fn detect_cargo_workspace_members(
     }
 }
 
-fn detect_cargo_targets(root: &Path, manifest: &TomlValue, builder: &mut RepoGraphBuilder) {
+fn detect_cargo_targets(
+    root: &Path,
+    manifest: &TomlValue,
+    package_name: Option<&str>,
+    builder: &mut RepoGraphBuilder,
+) {
     if manifest.get("lib").is_some() {
         let evidence_id = builder.add_evidence(
             Path::new("Cargo.toml"),
@@ -1601,10 +1616,28 @@ fn detect_cargo_targets(root: &Path, manifest: &TomlValue, builder: &mut RepoGra
             cargo_lib_patterns(root, manifest),
             evidence_id,
         );
+    } else if root.join("src/lib.rs").exists() {
+        let evidence_id = builder.add_detected_file(
+            Path::new("src/lib.rs"),
+            DetectedFileKind::SourceHint,
+            "source_hint",
+            None,
+            "Cargo default library target source detected.",
+        );
+        builder.add_component(
+            "component-rust-lib",
+            "lib",
+            "rust_lib_target",
+            ".",
+            vec!["src/lib.rs".to_string()],
+            evidence_id,
+        );
     }
 
+    let mut explicit_bin_detected = false;
     if let Some(bin_targets) = manifest.get("bin").and_then(TomlValue::as_array) {
         for (index, bin) in bin_targets.iter().enumerate() {
+            explicit_bin_detected = true;
             let name = bin.get("name").and_then(TomlValue::as_str).unwrap_or("bin");
             let evidence_id = builder.add_evidence(
                 Path::new("Cargo.toml"),
@@ -1621,6 +1654,24 @@ fn detect_cargo_targets(root: &Path, manifest: &TomlValue, builder: &mut RepoGra
                 evidence_id,
             );
         }
+    }
+
+    if !explicit_bin_detected && root.join("src/main.rs").exists() {
+        let evidence_id = builder.add_detected_file(
+            Path::new("src/main.rs"),
+            DetectedFileKind::SourceHint,
+            "source_hint",
+            None,
+            "Cargo default binary target source detected.",
+        );
+        builder.add_component(
+            "component-rust-bin-0",
+            package_name.unwrap_or("bin"),
+            "rust_bin_target",
+            ".",
+            vec!["src/main.rs".to_string()],
+            evidence_id,
+        );
     }
 }
 
@@ -2023,34 +2074,16 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
             vec!["Makefile".to_string()],
             evidence_id.clone(),
         );
-        builder.add_command(
-            "cmd-make",
-            RepoCommandKind::Other,
+        let parsed_targets = read_command_file_targets(&makefile);
+        add_command_file_targets(
+            builder,
+            "Makefile",
             "make",
-            Some("component-make-project"),
-            0.5,
-            evidence_id.clone(),
+            "component-make-project",
+            &parsed_targets.targets,
         );
 
-        let targets = read_simple_targets(&makefile);
-        if targets.contains(&"test".to_string()) {
-            builder.add_command(
-                "cmd-make-test",
-                RepoCommandKind::Test,
-                "make test",
-                Some("component-make-project"),
-                0.75,
-                evidence_id.clone(),
-            );
-            builder.add_test(
-                "test-make-test",
-                "make test",
-                "make test",
-                Some("component-make-project"),
-                0.75,
-                evidence_id.clone(),
-            );
-        } else {
+        if !parsed_targets.targets.iter().any(|target| target == "test") {
             builder.add_warning(
                 DetectionSeverity::Info,
                 DetectionCategory::MissingCommand,
@@ -2060,13 +2093,15 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
             );
         }
 
-        builder.add_warning(
-            DetectionSeverity::Info,
-            DetectionCategory::PartialSupport,
-            "Makefile target parsing is shallow.",
-            Some(Path::new("Makefile")),
-            Some(evidence_id),
-        );
+        if parsed_targets.ambiguous_lines > 0 {
+            builder.add_warning(
+                DetectionSeverity::Warning,
+                DetectionCategory::PartialSupport,
+                "Makefile contains target-like lines that were not parsed conservatively.",
+                Some(Path::new("Makefile")),
+                Some(evidence_id),
+            );
+        }
     }
 
     let justfile = root.join("justfile");
@@ -2087,34 +2122,16 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
             vec!["justfile".to_string()],
             evidence_id.clone(),
         );
-        builder.add_command(
-            "cmd-just",
-            RepoCommandKind::Other,
+        let parsed_targets = read_command_file_targets(&justfile);
+        add_command_file_targets(
+            builder,
+            "justfile",
             "just",
-            Some("component-just-project"),
-            0.5,
-            evidence_id.clone(),
+            "component-just-project",
+            &parsed_targets.targets,
         );
 
-        let targets = read_simple_targets(&justfile);
-        if targets.contains(&"test".to_string()) {
-            builder.add_command(
-                "cmd-just-test",
-                RepoCommandKind::Test,
-                "just test",
-                Some("component-just-project"),
-                0.75,
-                evidence_id.clone(),
-            );
-            builder.add_test(
-                "test-just-test",
-                "just test",
-                "just test",
-                Some("component-just-project"),
-                0.75,
-                evidence_id.clone(),
-            );
-        } else {
+        if !parsed_targets.targets.iter().any(|target| target == "test") {
             builder.add_warning(
                 DetectionSeverity::Info,
                 DetectionCategory::MissingCommand,
@@ -2124,13 +2141,15 @@ fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
             );
         }
 
-        builder.add_warning(
-            DetectionSeverity::Info,
-            DetectionCategory::PartialSupport,
-            "justfile recipe parsing is shallow.",
-            Some(Path::new("justfile")),
-            Some(evidence_id),
-        );
+        if parsed_targets.ambiguous_lines > 0 {
+            builder.add_warning(
+                DetectionSeverity::Warning,
+                DetectionCategory::PartialSupport,
+                "justfile contains recipe-like lines that were not parsed conservatively.",
+                Some(Path::new("justfile")),
+                Some(evidence_id),
+            );
+        }
     }
 
     if root.join("Dockerfile").exists() {
@@ -2298,6 +2317,58 @@ fn add_pytest(builder: &mut RepoGraphBuilder, evidence_id: String) {
     );
 }
 
+fn add_command_file_targets(
+    builder: &mut RepoGraphBuilder,
+    file_name: &str,
+    tool_name: &str,
+    scope_ref: &str,
+    targets: &[String],
+) {
+    for target in targets {
+        let Some(kind) = command_kind_for_target(target) else {
+            continue;
+        };
+
+        let evidence_id = builder.add_evidence(
+            Path::new(file_name),
+            "build_target",
+            Some(&format!("target.{target}")),
+            "Build file target detected.",
+        );
+        let command = format!("{tool_name} {target}");
+        builder.add_command(
+            &stable_id(&format!("cmd-{tool_name}"), target),
+            kind.clone(),
+            &command,
+            Some(scope_ref),
+            0.75,
+            evidence_id.clone(),
+        );
+
+        if kind == RepoCommandKind::Test {
+            builder.add_test(
+                &stable_id(&format!("test-{tool_name}"), target),
+                &command,
+                &command,
+                Some(scope_ref),
+                0.75,
+                evidence_id,
+            );
+        }
+    }
+}
+
+fn command_kind_for_target(target: &str) -> Option<RepoCommandKind> {
+    match target {
+        "test" => Some(RepoCommandKind::Test),
+        "check" => Some(RepoCommandKind::Check),
+        "build" => Some(RepoCommandKind::Build),
+        "lint" => Some(RepoCommandKind::Lint),
+        "fmt" | "format" => Some(RepoCommandKind::Format),
+        _ => None,
+    }
+}
+
 fn extract_package_json_workspaces(manifest: &JsonValue) -> Option<Vec<String>> {
     let workspaces = manifest.get("workspaces")?;
 
@@ -2352,16 +2423,18 @@ fn parse_simple_yaml_packages(path: &Path) -> Vec<String> {
 }
 
 fn detect_ignored_paths(root: &Path, builder: &mut RepoGraphBuilder) {
-    for ignored_path in [
-        "node_modules",
-        "target",
-        "dist",
-        "build",
-        ".cache",
-        ".venv",
-        "coverage",
+    for (ignored_path, emit_warning) in [
+        (".git", false),
+        ("node_modules", true),
+        ("target", true),
+        ("dist", true),
+        ("build", true),
+        (".cache", true),
+        (".venv", true),
+        ("__pycache__", true),
+        ("coverage", true),
     ] {
-        if root.join(ignored_path).exists() {
+        if emit_warning && root.join(ignored_path).exists() {
             builder.add_warning(
                 DetectionSeverity::Info,
                 DetectionCategory::IgnoredPath,
@@ -2373,28 +2446,59 @@ fn detect_ignored_paths(root: &Path, builder: &mut RepoGraphBuilder) {
     }
 }
 
-fn read_simple_targets(path: &Path) -> Vec<String> {
+fn read_command_file_targets(path: &Path) -> CommandFileTargets {
     let Ok(contents) = fs::read_to_string(path) else {
-        return Vec::new();
+        return CommandFileTargets {
+            targets: Vec::new(),
+            ambiguous_lines: 0,
+        };
     };
 
-    contents
-        .lines()
-        .filter_map(|line| {
-            if line.starts_with(char::is_whitespace) || line.trim_start().starts_with('#') {
-                return None;
-            }
+    let mut targets = BTreeSet::new();
+    let mut ambiguous_lines = 0;
 
-            let (target, _) = line.split_once(':')?;
-            let target = target.trim();
+    for line in contents.lines() {
+        let trimmed = line.trim_start();
+        if line.starts_with(char::is_whitespace)
+            || trimmed.is_empty()
+            || trimmed.starts_with('#')
+            || trimmed.starts_with(".PHONY:")
+            || trimmed.contains(":=")
+            || trimmed.contains("?=")
+            || trimmed.contains("+=")
+        {
+            continue;
+        }
 
-            if target.is_empty() || target.contains(' ') || target.contains('=') {
-                None
-            } else {
-                Some(target.to_string())
-            }
-        })
-        .collect()
+        let Some((target, _)) = trimmed.split_once(':') else {
+            continue;
+        };
+        let target = target.trim();
+
+        if is_simple_command_target(target) {
+            targets.insert(target.to_string());
+        } else if is_ambiguous_target_syntax(target) {
+            ambiguous_lines += 1;
+        }
+    }
+
+    CommandFileTargets {
+        targets: targets.into_iter().collect(),
+        ambiguous_lines,
+    }
+}
+
+fn is_simple_command_target(target: &str) -> bool {
+    command_kind_for_target(target).is_some()
+}
+
+fn is_ambiguous_target_syntax(target: &str) -> bool {
+    !target.is_empty()
+        && !target.starts_with('.')
+        && (target.chars().any(char::is_whitespace)
+            || target.contains('%')
+            || target.contains('$')
+            || target.contains('/'))
 }
 
 fn read_go_module_name(path: &Path) -> Option<String> {

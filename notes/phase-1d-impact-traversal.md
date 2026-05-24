@@ -38,9 +38,9 @@ Confidence is intentionally coarse:
 
 RepoGraph impact is now useful as a build/test primitive, but it still needs stronger build-system extraction before source-level confidence is justified. SymbolGraph and LSP should be added only after repository-level impact remains stable across fixtures and real repositories.
 
-## Phase 1E Next
+## Phase 1E-A Next
 
-- Improve build-system-specific extraction quality.
-- Add more dependency edges from manifest evidence.
-- Add lightweight quality fixtures or benchmark tasks for inspect/impact behavior.
+- Improve Cargo, Makefile, and justfile extractor quality first.
+- Add narrow fixture coverage for existing RepoGraph extractors.
+- Keep Python/Go expansion and benchmark harness separate.
 - Improve command scope inference before introducing SymbolGraph.

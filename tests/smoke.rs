@@ -47,9 +47,26 @@ fn parses_minimal_cargo_toml_fixture() {
         .iter()
         .any(|component| component.name == "minimal-cargo"));
     assert!(graph
+        .components
+        .iter()
+        .any(|component| component.kind == "rust_lib_target"
+            && component.file_patterns == vec!["src/lib.rs"]));
+    assert!(graph
         .commands
         .iter()
         .any(|command| command.command == "cargo test"));
+}
+
+#[test]
+fn detects_explicit_cargo_bin_target_fixture() {
+    let graph = inspect_repo("tests/fixtures/cargo-explicit-bin");
+
+    assert!(graph.components.iter().any(|component| {
+        component.name == "worker"
+            && component.kind == "rust_bin_target"
+            && component.file_patterns == vec!["src/bin/worker.rs"]
+    }));
+    assert_all_evidence_refs_exist(&graph);
 }
 
 #[test]
@@ -106,28 +123,40 @@ fn detects_minimal_go_module_fixture() {
 fn detects_generic_makefile_fixture() {
     let graph = inspect_repo("tests/fixtures/generic-make");
 
-    assert!(graph
-        .commands
-        .iter()
-        .any(|command| command.command == "make test"));
-    assert!(graph
-        .warnings
-        .iter()
-        .any(|warning| warning.category == DetectionCategory::PartialSupport));
+    for command in [
+        "make test",
+        "make check",
+        "make build",
+        "make lint",
+        "make fmt",
+    ] {
+        assert!(graph
+            .commands
+            .iter()
+            .any(|candidate| candidate.command == command));
+    }
+    assert!(graph.tests.iter().any(|test| test.command == "make test"));
+    assert_all_evidence_refs_exist(&graph);
 }
 
 #[test]
 fn detects_generic_justfile_fixture() {
     let graph = inspect_repo("tests/fixtures/generic-just");
 
-    assert!(graph
-        .commands
-        .iter()
-        .any(|command| command.command == "just test"));
-    assert!(graph
-        .warnings
-        .iter()
-        .any(|warning| warning.category == DetectionCategory::PartialSupport));
+    for command in [
+        "just test",
+        "just check",
+        "just build",
+        "just lint",
+        "just format",
+    ] {
+        assert!(graph
+            .commands
+            .iter()
+            .any(|candidate| candidate.command == command));
+    }
+    assert!(graph.tests.iter().any(|test| test.command == "just test"));
+    assert_all_evidence_refs_exist(&graph);
 }
 
 #[test]
@@ -144,6 +173,75 @@ fn every_component_command_test_and_package_manager_has_evidence() {
 
     assert_all_evidence_refs_exist(&graph);
     assert_all_graph_facts_have_evidence(&graph);
+}
+
+#[test]
+fn every_fixture_has_valid_inspect_json_and_evidence_refs() {
+    for fixture in [
+        "tests/fixtures/minimal-cargo",
+        "tests/fixtures/cargo-explicit-bin",
+        "tests/fixtures/cargo-workspace",
+        "tests/fixtures/cargo-workspace-deps",
+        "tests/fixtures/minimal-node",
+        "tests/fixtures/minimal-python",
+        "tests/fixtures/minimal-go",
+        "tests/fixtures/generic-make",
+        "tests/fixtures/generic-just",
+        "tests/fixtures/malformed-manifest",
+    ] {
+        let graph = inspect_repo(fixture);
+        serde_json::to_value(&graph).expect("fixture inspect output should serialize");
+        assert_eq!(graph.contract_version, INSPECT_CONTRACT_VERSION);
+        assert_all_evidence_refs_exist(&graph);
+    }
+}
+
+#[test]
+fn ignored_directories_do_not_create_graph_facts() {
+    let root = std::env::temp_dir().join(format!(
+        "code-intel-kernel-ignored-paths-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    for ignored_path in [
+        ".git",
+        "target",
+        "node_modules",
+        "dist",
+        "build",
+        ".cache",
+        ".venv",
+        "__pycache__",
+    ] {
+        std::fs::create_dir_all(root.join(ignored_path))
+            .expect("ignored directory should be created");
+    }
+    std::fs::write(
+        root.join("target").join("Cargo.toml"),
+        "[package]\nname = \"ignored-target\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    )
+    .expect("ignored manifest should be written");
+    std::fs::write(
+        root.join("node_modules").join("package.json"),
+        "{\"name\":\"ignored-node-module\"}\n",
+    )
+    .expect("ignored package manifest should be written");
+
+    let graph = inspect_repo(&root);
+    let _ = std::fs::remove_dir_all(&root);
+
+    assert!(graph.components.is_empty());
+    assert!(graph.package_managers.is_empty());
+    assert!(graph.commands.is_empty());
+    assert!(graph.tests.is_empty());
+    assert!(graph
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::IgnoredPath));
+    assert!(graph
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::NoSupportedManifests));
 }
 
 #[test]

@@ -37,13 +37,26 @@
 - Keep impact analysis RepoGraph-only until behavior is stable on real repositories.
 - Keep `where-to-edit` as `insufficient_evidence`.
 
-## Phase 1E: RepoGraph extraction quality
+## Phase 1E-A: RepoGraph extractor quality, Cargo and command files
 
-- Improve command inference across Cargo, Node, Python, Go, Make, just, and workflows.
-- Improve workspace/component relationships and dependency edges when manifest evidence is explicit.
-- Add more fixtures for ambiguous and partially supported build systems.
-- Add lightweight benchmark or quality tasks for inspect/impact behavior.
-- Consider storage only after the in-memory graph output has proven stable.
+- Document extractor quality and acceptance criteria before SymbolGraph.
+- Improve Cargo target extraction where evidence is cheap and local.
+- Improve Makefile/justfile command extraction for clear top-level targets.
+- Harden ignored-path handling.
+- Add semantic fixture tests for evidence, deterministic output, and impact traversal.
+
+## Phase 1E-B: Python and Go extraction quality
+
+- Add Python and Go fixture coverage.
+- Improve conservative Python and Go command inference where manifest/layout evidence exists.
+- Keep extraction read-only; do not run ecosystem tooling.
+- Keep SymbolGraph deferred unless RepoGraph quality is stable.
+
+## Phase 1F: RepoGraph evaluation harness
+
+- Add lightweight fixture-based scoring for inspect/impact quality.
+- Track evidence coverage, warning quality, expected command/test detection, and impact expectations.
+- Use this before deciding whether to start SymbolGraph.
 
 ## Phase 2: SymbolGraph MVP
 
