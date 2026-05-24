@@ -1,0 +1,45 @@
+{
+  "taskId": "T-001",
+  "claim": "Edit packages/web/src/auth/LoginForm.tsx rather than packages/server/src/auth.ts.",
+  "confidence": 0.87,
+  "files": [
+    {
+      "path": "packages/web/src/auth/LoginForm.tsx",
+      "reason": "Contains LoginForm and UI validation copy for login screen.",
+      "score": 0.91
+    },
+    {
+      "path": "packages/web/src/auth/LoginForm.test.tsx",
+      "reason": "Likely source test file by naming convention.",
+      "score": 0.74
+    }
+  ],
+  "symbols": [
+    {
+      "name": "LoginForm",
+      "kind": "function",
+      "path": "packages/web/src/auth/LoginForm.tsx",
+      "reason": "Primary UI component related to the task.",
+      "score": 0.92
+    }
+  ],
+  "commands": [
+    {
+      "kind": "test",
+      "command": "pnpm --filter web test LoginForm",
+      "scope": "packages/web",
+      "reason": "Package-local test command inferred from package.json and file path.",
+      "confidence": 0.76
+    }
+  ],
+  "risks": [
+    {
+      "code": "LOW_CONFIDENCE_TEST_COMMAND",
+      "severity": "medium",
+      "message": "Test command inferred heuristically; verify package script name."
+    }
+  ],
+  "missingEvidence": [
+    "LSP references were not available in this example."
+  ]
+}

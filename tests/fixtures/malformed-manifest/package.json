@@ -1,0 +1,6 @@
+{
+  "name": "broken",
+  "scripts": {
+    "test": "node --test",
+  }
+}

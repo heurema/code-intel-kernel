@@ -1,0 +1,38 @@
+{
+  "root": ".",
+  "packages": [
+    {
+      "name": "web",
+      "path": "packages/web",
+      "packageManager": "pnpm",
+      "commands": {
+        "test": "pnpm --filter web test",
+        "lint": "pnpm --filter web lint",
+        "typecheck": "pnpm --filter web typecheck"
+      }
+    },
+    {
+      "name": "server",
+      "path": "packages/server",
+      "packageManager": "pnpm",
+      "commands": {
+        "test": "pnpm --filter server test",
+        "lint": "pnpm --filter server lint"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": "packages/web",
+      "dst": "packages/shared",
+      "kind": "depends_on",
+      "confidence": 0.8
+    }
+  ],
+  "ignored": [
+    "node_modules",
+    "dist",
+    ".next",
+    "coverage"
+  ]
+}

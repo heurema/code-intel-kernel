@@ -1,0 +1,14 @@
+{
+  "score": 0.72,
+  "diagnosticsDelta": {
+    "before": 12,
+    "after": 9,
+    "newErrors": 1,
+    "fixedErrors": 4
+  },
+  "editScopeOk": true,
+  "impactedTestsKnown": true,
+  "affectedSymbolsConfidence": 0.81,
+  "testPlanConfidence": 0.74,
+  "riskFlags": []
+}

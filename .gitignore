@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.cache/
+target/
+.DS_Store
+*.log
+
+# Local kernel state
+.code-intel/
+*.sqlite
+*.sqlite3

@@ -1,0 +1,41 @@
+# CLAUDE.md Template for Code Intelligence Kernel
+
+## Project
+
+Code Intelligence Kernel is a local-first structural code intelligence module for Goalrail and Punk.
+
+## Current phase
+
+Milestone 0/1: documentation-first skeleton and RepoGraph MVP.
+
+## Non-goals
+
+- No embeddings-first RAG.
+- No heavy graph DB.
+- No MCP mutation tools.
+- No arbitrary shell/file tools.
+- No UI/dashboard.
+
+## Commands
+
+Update once implementation exists:
+
+```bash
+npm test
+npm run build
+npm run lint
+```
+
+## Architecture constraints
+
+- Local-first.
+- Read-only first.
+- SQLite + JSONL first.
+- Tree-sitter for syntax.
+- LSP for semantic facts.
+- EvidenceBundle before edits in Goalrail mode.
+- ProcessReward before final verification claims.
+
+## Decision rule
+
+When uncertain, choose the smallest reversible implementation that preserves evidence and typed events.

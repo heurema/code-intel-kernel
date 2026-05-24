@@ -1,0 +1,14 @@
+{
+  "id": "evt_001",
+  "taskId": "T-001",
+  "eventType": "hypothesis_rejected",
+  "payload": {
+    "hypothesis": "Edit packages/server/src/auth.ts",
+    "reason": "Task asks for UI copy; server auth file handles token validation.",
+    "evidence": [
+      "packages/server/src/auth.ts",
+      "packages/web/src/auth/LoginForm.tsx"
+    ]
+  },
+  "createdAt": "2026-05-24T12:00:00Z"
+}
