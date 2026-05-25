@@ -1,0 +1,16 @@
+{
+  "name": "source_evidence_function_match",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_evidence",
+  "query": "top_level_function",
+  "expect": {
+    "status": "partial",
+    "confidence": "medium",
+    "candidate_files_contains": ["src/lib.rs"],
+    "candidate_symbols_contains": [
+      { "name": "top_level_function", "kind": "function", "path": "src/lib.rs" }
+    ],
+    "warnings_contains_categories": ["insufficient_evidence_for_localization"],
+    "missing_evidence_contains": ["reference_graph"]
+  }
+}

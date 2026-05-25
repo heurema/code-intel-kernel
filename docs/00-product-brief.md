@@ -49,7 +49,10 @@ Punk can use this module as a fast/prototype consumer:
 
 The current stable foundation is RepoGraph: repository/build/test-level `inspect`, `impact`, and `eval-fixtures`.
 
-The current source-level layer is SymbolGraph-lite: Rust top-level `symbols` output only.
+The current source-level layer is SymbolGraph-lite plus SourceEvidenceBundle evidence assembly:
+
+- Rust top-level `symbols` output;
+- read-only `source-evidence` bundle output.
 
 LSP, SQLite, MCP, embeddings, process reward, call graph, references, and confident edit localization are later layers. `where-to-edit` must return `insufficient_evidence` until evaluated localization evidence exists.
 
@@ -84,6 +87,7 @@ code-intel impact src/main.rs Cargo.toml --json
 code-intel eval-fixtures --json
 code-intel symbols . --json
 code-intel where-to-edit "change login validation copy" --profile=strict --json
+code-intel source-evidence "parse repo graph" --json
 ```
 
 ## Success criteria for the first milestone
@@ -93,5 +97,6 @@ code-intel where-to-edit "change login validation copy" --profile=strict --json
 - Produces conservative RepoGraph-only impact output.
 - Measures quality with fixture-based eval.
 - Produces evidence-backed Rust top-level SymbolGraph-lite output.
+- Produces read-only SourceEvidenceBundle evidence assembly.
 - Keeps `where-to-edit` as `insufficient_evidence`.
 - Does not require LSP, SQLite, MCP, embeddings, or external services.

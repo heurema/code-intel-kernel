@@ -42,7 +42,7 @@ Phase 2A implements only SymbolGraph-lite:
 
 It still does not own calls, references, imports/exports, LSP diagnostics, or edit localization.
 
-Phase 2B adds evaluation coverage for SymbolGraph-lite and documents SourceEvidenceBundle as a future evidence packet. SourceEvidenceBundle does not move edit localization into SymbolGraph yet.
+Phase 2B adds evaluation coverage for SymbolGraph-lite. Phase 2C adds SourceEvidenceBundle as read-only evidence assembly. SourceEvidenceBundle does not move edit localization into SymbolGraph.
 
 ## Explicit Non-Goals
 

@@ -1,0 +1,12 @@
+{
+  "name": "source_evidence_file_match",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_evidence",
+  "query": "src/lib.rs",
+  "expect": {
+    "status": "partial",
+    "confidence": "medium",
+    "candidate_files_contains": ["src/lib.rs"],
+    "warnings_contains_categories": ["insufficient_evidence_for_localization"]
+  }
+}

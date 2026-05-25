@@ -1,0 +1,16 @@
+{
+  "name": "source_evidence_no_match",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_evidence",
+  "query": "no_such_symbol_zz",
+  "expect": {
+    "status": "insufficient_evidence",
+    "confidence": "insufficient",
+    "warnings_contains_categories": [
+      "no_matching_source_files",
+      "no_matching_source_symbols",
+      "insufficient_evidence_for_localization"
+    ],
+    "missing_evidence_contains": ["source_match"]
+  }
+}

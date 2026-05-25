@@ -1,6 +1,6 @@
 # Localization Readiness Checklist
 
-Status: Phase 2B gate. Current conclusion: `not_ready_for_confident_localization`.
+Status: Phase 2C gate. Current conclusion: `not_ready_for_confident_localization`.
 
 This checklist defines what must be true before `where-to-edit` can return confident file or symbol candidates.
 
@@ -32,7 +32,12 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 ## Missing Before Confident Localization
 
-- [ ] SourceEvidenceBundle runtime prototype exists.
+- [x] SourceEvidenceBundle runtime prototype exists.
+  Evidence: `cargo run --quiet -- source-evidence "parse repo graph" --json`; smoke test `source_evidence_cli_output_is_valid_json`.
+
+- [x] SourceEvidenceBundle eval cases pass.
+  Evidence: `cargo run --quiet -- eval-fixtures --json`, `source_evidence_cases > 0`, `failed_cases = 0`.
+
 - [ ] Candidate files and symbols are tied to queries by evaluated evidence, not string guessing.
 - [ ] SymbolGraph-to-RepoGraph linking is defined and tested.
 - [ ] Reference/import/call graph decision is made.
@@ -45,4 +50,4 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 `not_ready_for_confident_localization`
 
-Phase 2B verifies top-level Rust source facts and documents the SourceEvidenceBundle shape. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.
+Phase 2C verifies top-level Rust source facts and adds evidence assembly. It still uses only deterministic string/token matching. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.

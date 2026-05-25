@@ -18,13 +18,14 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 
 ```json
 {
-  "eval_contract_version": "0.2",
+  "eval_contract_version": "0.3",
   "total_cases": 0,
   "passed_cases": 0,
   "failed_cases": 0,
   "inspect_cases": 0,
   "impact_cases": 0,
   "symbol_cases": 0,
+  "source_evidence_cases": 0,
   "metrics": {
     "evidence_coverage_pass_rate": 1.0,
     "expected_fact_recall": 1.0,
@@ -39,7 +40,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 }
 ```
 
-The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report now counts `symbol_cases` and accepts `symbols` eval cases. This does not change the `inspect`, `impact`, or `symbols` contracts.
+The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report counts `symbol_cases` and accepts `symbols` eval cases. Phase 2C bumps it to `0.3` because the report counts `source_evidence_cases` and accepts `source_evidence` eval cases. This does not change the `inspect`, `impact`, `symbols`, or `source_evidence` contracts.
 
 ## Case Format
 
@@ -69,6 +70,7 @@ Known `kind` values:
 - `inspect`
 - `impact`
 - `symbols`
+- `source_evidence`
 
 Expectations are semantic checks, not full-output snapshots. A case can assert required facts, forbidden facts, expected warning categories, unexpected warning categories, impact status, confidence, scope, and maximum impacted component count.
 
@@ -94,6 +96,27 @@ Symbol cases use the same file format:
 ```
 
 For `symbols_contains` and `symbols_not_contains`, `kind` and `path` may be supplied to make the match more specific. Symbol eval always checks evidence coverage and deterministic output across repeated extraction.
+
+Source-evidence cases can assert candidate files, candidate symbols, status, confidence, warnings, and missing evidence:
+
+```json
+{
+  "name": "source_evidence_function_match",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_evidence",
+  "query": "top_level_function",
+  "expect": {
+    "status": "partial",
+    "confidence": "medium",
+    "candidate_files_contains": ["src/lib.rs"],
+    "candidate_symbols_contains": [
+      { "name": "top_level_function", "kind": "function" }
+    ],
+    "warnings_contains_categories": ["insufficient_evidence_for_localization"],
+    "missing_evidence_contains": ["reference_graph"]
+  }
+}
+```
 
 ## Metrics
 
@@ -137,6 +160,7 @@ The initial case set covers:
 - Rust top-level symbol extraction;
 - Rust malformed source parse warning;
 - ignored source paths for SymbolGraph-lite.
+- SourceEvidenceBundle function match, file match, and no-match refusal.
 
 ## Negative Case Rationale
 

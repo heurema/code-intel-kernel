@@ -1,10 +1,10 @@
 # SourceEvidenceBundle Contract
 
-Status: Phase 2B design contract. Not an active CLI command or localization API.
+Status: Phase 2C prototype contract. Active as read-only evidence assembly, not localization.
 
-A SourceEvidenceBundle is a future source-level evidence packet for review, localization, and impact reasoning. It should combine candidate source files, candidate symbols, source evidence, and relevant RepoGraph context while remaining honest about missing evidence.
+A SourceEvidenceBundle is a source-level evidence packet for future review, localization, and impact reasoning. It combines candidate source files, candidate symbols, source evidence, and relevant RepoGraph context while remaining honest about missing evidence.
 
-Phase 2B only documents this contract. It does not connect SymbolGraph-lite to `where-to-edit`.
+Phase 2C implements this contract through `source-evidence`. It does not connect SymbolGraph-lite or SourceEvidenceBundle to `where-to-edit`.
 
 ## Shape
 
@@ -84,7 +84,7 @@ Every candidate file and symbol must reference existing evidence IDs.
 - `partial`: some useful source evidence exists, but important evidence is missing.
 - `insufficient_evidence`: the bundle cannot support the requested use without guessing.
 
-For edit localization, Phase 2B expects `insufficient_evidence`.
+For edit localization, Phase 2C still expects `insufficient_evidence`.
 
 ## Missing Evidence
 
@@ -120,7 +120,6 @@ Example:
 
 ## Non-Goals
 
-- No CLI command in Phase 2B.
 - No active edit planning.
 - No `where-to-edit` integration.
 - No call graph.

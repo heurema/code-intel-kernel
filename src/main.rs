@@ -1,6 +1,6 @@
 use code_intel_kernel::{
-    analyze_impact, build_symbol_graph, create_evidence_bundle, inspect_repo,
-    run_fixture_evaluation, EvidenceRequest, KernelProfile,
+    analyze_impact, build_source_evidence_bundle, build_symbol_graph, create_evidence_bundle,
+    inspect_repo, run_fixture_evaluation, EvidenceRequest, KernelProfile,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -39,6 +39,12 @@ fn run(args: Vec<String>) -> i32 {
                 .unwrap_or(".");
             let snapshot = build_symbol_graph(repo_path);
             print_json(&snapshot);
+            0
+        }
+        Some("source-evidence") => {
+            let (repo_path, query) = parse_source_evidence_args(&args[1..]);
+            let bundle = build_source_evidence_bundle(repo_path, query);
+            print_json(&bundle);
             0
         }
         Some("eval-fixtures") => match run_fixture_evaluation("tests/eval/cases") {
@@ -135,6 +141,36 @@ fn parse_changed_files(args: &[String]) -> Vec<String> {
     changed_files
 }
 
+fn parse_source_evidence_args(args: &[String]) -> (&str, &str) {
+    let mut repo_path = ".";
+    let mut query = "";
+    let mut args_iter = args.iter();
+
+    while let Some(arg) = args_iter.next() {
+        if arg == "--json" {
+            continue;
+        }
+
+        if arg == "--repo" {
+            if let Some(value) = args_iter.next() {
+                repo_path = value;
+            }
+            continue;
+        }
+
+        if let Some(value) = arg.strip_prefix("--repo=") {
+            repo_path = value;
+            continue;
+        }
+
+        if query.is_empty() {
+            query = arg;
+        }
+    }
+
+    (repo_path, query)
+}
+
 fn split_changed_files(value: &str) -> Vec<String> {
     value
         .split(',')
@@ -146,7 +182,7 @@ fn split_changed_files(value: &str) -> Vec<String> {
 
 fn print_help() {
     println!(
-        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel symbols <repo-path> [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nRepoGraph impact is repository/build/test-level only. SymbolGraph-lite extracts top-level Rust source facts only. LSP, SQLite, MCP, EvidenceBundle, ProcessReward, call graph, references, and edit localization are intentionally deferred."
+        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel symbols <repo-path> [--json]\n  code-intel source-evidence \"<query>\" [--repo <repo-path>] [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nRepoGraph impact is repository/build/test-level only. SymbolGraph-lite extracts top-level Rust source facts only. SourceEvidenceBundle is evidence assembly only. LSP, SQLite, MCP, ProcessReward, call graph, references, and edit localization are intentionally deferred."
     );
 }
 

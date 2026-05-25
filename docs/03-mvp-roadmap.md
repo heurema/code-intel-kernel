@@ -28,6 +28,7 @@ Phase 1: RepoGraph inspect, impact, and eval
 Phase 1G: SymbolGraph readiness gate
 Phase 2A: SymbolGraph-lite
 Phase 2B: SymbolGraph eval and SourceEvidenceBundle contract
+Phase 2C: SourceEvidenceBundle prototype
 Phase 3: LSP diagnostics bridge
 Phase 4: EvidenceBundle and ProcessReward
 Phase 5: SessionMemory
@@ -166,6 +167,21 @@ Measure SymbolGraph-lite facts through eval cases and document the SourceEvidenc
 - Source files and symbols remain evidence-backed and deterministic.
 - SourceEvidenceBundle is documented but not wired to `where-to-edit`.
 - Localization remains `not_ready_for_confident_localization`.
+- `where-to-edit` remains `insufficient_evidence`.
+
+## Phase 2C — SourceEvidenceBundle prototype
+
+### Goal
+
+Assemble query, RepoGraph context, SymbolGraph-lite facts, evidence, limitations, and missing evidence into one read-only JSON packet.
+
+### Acceptance criteria
+
+- `source-evidence` CLI returns valid JSON.
+- `source_evidence` contract version is `0.1`.
+- Eval includes source-evidence cases.
+- Candidate files and symbols are evidence-backed.
+- No output claims edit locations.
 - `where-to-edit` remains `insufficient_evidence`.
 
 ## Phase 3 — LSP diagnostics bridge

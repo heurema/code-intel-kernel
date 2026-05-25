@@ -1,10 +1,12 @@
 use code_intel_kernel::{
-    analyze_impact, build_symbol_graph, create_evidence_bundle, evaluate_cases, inspect_repo,
-    load_eval_cases, run_fixture_evaluation, symbol_graph_evidence_valid, DetectionCategory,
-    DetectionSeverity, EvalCase, EvalCaseKind, EvalExpect, EvidenceRequest, ImpactConfidence,
-    ImpactKind, ImpactReport, ImpactScope, ImpactStatus, KernelProfile, ParseStatus,
-    RelationshipKind, RepoInspection, SymbolGraph, SymbolKind, SymbolWarningCategory,
-    EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
+    analyze_impact, build_source_evidence_bundle, build_symbol_graph, create_evidence_bundle,
+    evaluate_cases, inspect_repo, load_eval_cases, run_fixture_evaluation,
+    source_evidence_bundle_evidence_valid, symbol_graph_evidence_valid, BundleConfidence,
+    BundleStatus, BundleWarningCategory, DetectionCategory, DetectionSeverity, EvalCase,
+    EvalCaseKind, EvalExpect, EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport,
+    ImpactScope, ImpactStatus, KernelProfile, ParseStatus, RelationshipKind, RepoInspection,
+    SourceEvidenceBundle, SymbolGraph, SymbolKind, SymbolWarningCategory, EVAL_CONTRACT_VERSION,
+    IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION, SOURCE_EVIDENCE_CONTRACT_VERSION,
     SYMBOLS_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
@@ -854,10 +856,141 @@ fn symbols_cli_output_is_valid_json() {
 }
 
 #[test]
+fn source_evidence_exact_symbol_returns_evidence_candidate() {
+    let bundle =
+        build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "top_level_function");
+
+    assert_eq!(bundle.contract_version, SOURCE_EVIDENCE_CONTRACT_VERSION);
+    assert_eq!(bundle.status, BundleStatus::Partial);
+    assert_eq!(bundle.confidence, BundleConfidence::Medium);
+    assert!(bundle
+        .candidate_symbols
+        .iter()
+        .any(|symbol| symbol.name == "top_level_function"
+            && symbol.kind == SymbolKind::Function
+            && !symbol.evidence_ids.is_empty()));
+    assert!(bundle
+        .candidate_files
+        .iter()
+        .any(|file| file.path == "src/lib.rs" && !file.evidence_ids.is_empty()));
+    assert!(source_evidence_bundle_evidence_valid(&bundle));
+    assert!(bundle.refusal_reason.as_deref().is_some_and(|reason| {
+        reason.contains("evidence assembly") || reason.contains("does not identify edit locations")
+    }));
+}
+
+#[test]
+fn source_evidence_file_path_query_returns_candidate_file() {
+    let bundle = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "src/lib.rs");
+
+    assert_eq!(bundle.status, BundleStatus::Partial);
+    assert!(bundle
+        .candidate_files
+        .iter()
+        .any(|file| file.path == "src/lib.rs"));
+    assert!(source_evidence_bundle_evidence_valid(&bundle));
+}
+
+#[test]
+fn source_evidence_no_match_returns_insufficient_evidence() {
+    let bundle =
+        build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "no_such_symbol_zz");
+
+    assert_eq!(bundle.status, BundleStatus::InsufficientEvidence);
+    assert_eq!(bundle.confidence, BundleConfidence::Insufficient);
+    assert!(bundle.candidate_files.is_empty());
+    assert!(bundle.candidate_symbols.is_empty());
+    assert!(bundle
+        .warnings
+        .iter()
+        .any(|warning| warning.category == BundleWarningCategory::NoMatchingSourceSymbols));
+    assert!(source_evidence_bundle_evidence_valid(&bundle));
+}
+
+#[test]
+fn source_evidence_ambiguous_query_returns_partial_with_warning() {
+    let bundle = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "widget");
+
+    assert_eq!(bundle.status, BundleStatus::Partial);
+    assert!(bundle.candidate_symbols.len() > 1);
+    assert!(bundle
+        .warnings
+        .iter()
+        .any(|warning| warning.category == BundleWarningCategory::MultipleCandidates));
+}
+
+#[test]
+fn source_evidence_malformed_source_warns_without_panic() {
+    let bundle = build_source_evidence_bundle("tests/fixtures/rust-symbols-malformed", "broken");
+
+    assert_eq!(bundle.status, BundleStatus::InsufficientEvidence);
+    assert!(bundle
+        .warnings
+        .iter()
+        .any(|warning| warning.category == BundleWarningCategory::SymbolGraphParseWarning));
+    assert!(source_evidence_bundle_evidence_valid(&bundle));
+}
+
+#[test]
+fn source_evidence_ignored_directories_do_not_produce_candidates() {
+    let bundle = build_source_evidence_bundle(
+        "tests/fixtures/rust-symbols-ignored",
+        "ignored_target_symbol",
+    );
+
+    assert_eq!(bundle.status, BundleStatus::InsufficientEvidence);
+    assert!(!bundle
+        .candidate_files
+        .iter()
+        .any(|file| file.path.contains("target/") || file.path.contains("node_modules/")));
+    assert!(!bundle
+        .candidate_symbols
+        .iter()
+        .any(|symbol| symbol.name == "ignored_target_symbol"));
+}
+
+#[test]
+fn source_evidence_output_is_deterministic() {
+    let first = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "widget");
+    let second = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "widget");
+
+    assert_eq!(first, second);
+}
+
+#[test]
+fn source_evidence_cli_output_is_valid_json() {
+    let binary = env!("CARGO_BIN_EXE_code-intel");
+    let output = Command::new(binary)
+        .args([
+            "source-evidence",
+            "top_level_function",
+            "--repo",
+            "tests/fixtures/rust-symbols-basic",
+            "--json",
+        ])
+        .output()
+        .expect("source-evidence command should run");
+
+    assert!(
+        output.status.success(),
+        "source-evidence command failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let bundle: SourceEvidenceBundle =
+        serde_json::from_slice(&output.stdout).expect("source-evidence output should be JSON");
+    assert_eq!(bundle.contract_version, SOURCE_EVIDENCE_CONTRACT_VERSION);
+    assert!(bundle
+        .candidate_symbols
+        .iter()
+        .any(|symbol| symbol.name == "top_level_function"));
+}
+
+#[test]
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
-    assert!(cases.len() >= 20);
+    assert!(cases.len() >= 23);
     assert!(cases
         .iter()
         .any(|case| case.name == "cargo_workspace_dependency_impact"));
@@ -867,6 +1000,9 @@ fn evaluator_loads_fixture_cases() {
     assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Inspect));
     assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Impact));
     assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Symbols));
+    assert!(cases
+        .iter()
+        .any(|case| case.kind == EvalCaseKind::SourceEvidence));
 }
 
 #[test]
@@ -876,14 +1012,16 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
 
     assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
     assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
-    assert!(report.total_cases >= 20);
+    assert!(report.total_cases >= 23);
     assert!(report.inspect_cases > 0);
     assert!(report.impact_cases > 0);
     assert!(report.symbol_cases > 0);
+    assert!(report.source_evidence_cases > 0);
     assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
     assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
     assert!(json.get("metrics").is_some());
     assert!(json.get("symbol_cases").is_some());
+    assert!(json.get("source_evidence_cases").is_some());
 }
 
 #[test]
@@ -905,6 +1043,9 @@ fn eval_fixtures_cli_output_is_valid_json() {
     assert_eq!(json["eval_contract_version"], EVAL_CONTRACT_VERSION);
     assert_eq!(json["failed_cases"], 0);
     assert!(json["symbol_cases"].as_u64().is_some_and(|count| count > 0));
+    assert!(json["source_evidence_cases"]
+        .as_u64()
+        .is_some_and(|count| count > 0));
     assert!(json.get("metrics").is_some());
 }
 
@@ -950,11 +1091,31 @@ fn source_evidence_bundle_contract_docs_exist() {
 }
 
 #[test]
+fn source_evidence_eval_cases_pass() {
+    let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
+
+    for case_name in [
+        "source_evidence_function_match",
+        "source_evidence_file_match",
+        "source_evidence_no_match",
+    ] {
+        let result = report
+            .cases
+            .iter()
+            .find(|case| case.name == case_name)
+            .expect("source evidence eval case should be present");
+        assert!(result.passed, "{case_name} failed: {:?}", result.failures);
+        assert_eq!(result.kind, EvalCaseKind::SourceEvidence);
+    }
+}
+
+#[test]
 fn evaluator_reports_deliberate_false_narrow() {
     let report = evaluate_cases(vec![EvalCase {
         name: "deliberate_false_narrow".to_string(),
         fixture: "tests/fixtures/minimal-cargo".to_string(),
         kind: EvalCaseKind::Inspect,
+        query: String::new(),
         changed_files: Vec::new(),
         expect: EvalExpect {
             components_contains: vec!["missing-component".to_string()],
@@ -977,6 +1138,7 @@ fn evaluator_reports_deliberate_false_broad() {
         name: "deliberate_false_broad".to_string(),
         fixture: "tests/fixtures/minimal-cargo".to_string(),
         kind: EvalCaseKind::Impact,
+        query: String::new(),
         changed_files: vec!["Cargo.toml".to_string()],
         expect: EvalExpect {
             max_impacted_components: Some(0),

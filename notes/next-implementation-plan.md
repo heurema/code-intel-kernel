@@ -95,8 +95,10 @@
 
 ## Phase 2C: SourceEvidenceBundle prototype
 
-- Prototype SourceEvidenceBundle generation without edit localization.
+- Add read-only SourceEvidenceBundle generation without edit localization.
 - Combine query, SymbolGraph-lite facts, and RepoGraph context only where evidence supports it.
+- Add `source-evidence` CLI output with contract version `0.1`.
+- Add eval coverage and bump eval contract to `0.3`.
 - Return `partial` or `insufficient_evidence` when query-to-symbol relevance is missing.
 - Keep candidate files/symbols as context, not edit instructions.
 
@@ -104,6 +106,7 @@
 
 - Link source files/symbols to RepoGraph components by path evidence.
 - Add fixture eval for source-to-component relationships.
+- Harden SourceEvidenceBundle refusal behavior for ambiguous and no-match queries.
 - Still avoid confident `where-to-edit` until localization has dedicated negative eval cases.
 
 ## Phase 3: LSP diagnostics bridge
