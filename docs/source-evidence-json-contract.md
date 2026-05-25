@@ -93,7 +93,7 @@ Each candidate symbol has:
 - `reason`
 - `evidence_ids`
 
-Only Rust top-level SymbolGraph-lite facts are available in Phase 2D.
+Only Rust top-level SymbolGraph-lite facts are available in the current runtime.
 
 ## source_context_selectors
 

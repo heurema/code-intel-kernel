@@ -7,7 +7,7 @@ Goalrail / Punk / Codex / Claude / other consumer
         ↓
 Code Intelligence Kernel
         ↓
-RepoGraph now; SymbolGraph + LSP facts + SessionMemory + ProcessReward later
+RepoGraph now; SymbolGraph-lite + SourceEvidence + SourceContext now; LSP facts + SessionMemory + ProcessReward later
         ↓
 CLI / SDK now; optional MCP read-only tools later
         ↓
@@ -94,13 +94,16 @@ SymbolGraph maps source-level structure:
 - methods;
 - types/interfaces;
 - tests;
-- references when available.
+- references only after a separate evaluated reference layer exists.
 
-Initial implementation:
+Current implementation:
 
 ```text
-Phase 2A candidate: Rust top-level source facts first, or a language-agnostic source-file graph stub if safer.
-No call graph, LSP, SQLite, MCP, embeddings, or confident edit localization in Phase 2A.
+Phase 2A: Rust top-level source facts.
+Phase 2B: SymbolGraph eval coverage.
+Phase 2C-2F: SourceEvidence and SourceContext evidence/context layers.
+Phase 2G: adversarial localization readiness gate.
+No call graph, LSP runtime, SQLite, MCP, embeddings, or confident edit localization yet.
 Later targets can include TypeScript, TSX, JavaScript, Python, Go, Java, Kotlin, and PHP.
 ```
 
@@ -115,7 +118,7 @@ LSP bridge uses language servers for precise facts:
 - implementations;
 - call hierarchy where supported.
 
-Initial implementation can be minimal:
+Phase 3A is design-only. Phase 3B implementation can be minimal:
 
 ```text
 diagnostics snapshot
@@ -126,12 +129,12 @@ diagnostic delta before/after
 
 ### 4. EvidenceBundle
 
-EvidenceBundle is the key output for agents. It explains why files/symbols/commands are relevant.
+EvidenceBundle is the key future output for agents. It should explain why files/symbols/commands are relevant without turning evidence into edit instructions before localization is evaluated.
 
-Example claim:
+Future example claim after a localization-specific gate:
 
 ```text
-"Edit packages/web/src/auth/LoginForm.tsx, not packages/server/src/auth.ts."
+"packages/web/src/auth/LoginForm.tsx is a supported candidate; packages/server/src/auth.ts has lower relevance."
 ```
 
 Evidence:
@@ -236,7 +239,7 @@ SymbolGraph-lite internal API
 Milestone 3:
 
 ```text
-LSP bridge or source-level evidence bundles after SymbolGraph quality is measured
+LSP diagnostics/reference bridge design, then one narrow read-only implementation candidate
 ```
 
 Milestone 4:

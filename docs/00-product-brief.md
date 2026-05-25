@@ -88,6 +88,7 @@ code-intel eval-fixtures --json
 code-intel symbols . --json
 code-intel where-to-edit "change login validation copy" --profile=strict --json
 code-intel source-evidence "parse repo graph" --json
+code-intel source-context --file src/lib.rs --json
 ```
 
 ## Success criteria for the first milestone
@@ -98,5 +99,6 @@ code-intel source-evidence "parse repo graph" --json
 - Measures quality with fixture-based eval.
 - Produces evidence-backed Rust top-level SymbolGraph-lite output.
 - Produces read-only SourceEvidenceBundle evidence assembly.
+- Produces read-only SourceContext slices from explicit selectors.
 - Keeps `where-to-edit` as `insufficient_evidence`.
 - Does not require LSP, SQLite, MCP, embeddings, or external services.

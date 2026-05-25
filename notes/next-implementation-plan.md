@@ -143,6 +143,7 @@
 - Decide whether the first bridge is Rust-oriented, TypeScript-oriented, or protocol-oriented.
 - Define evidence-backed diagnostics/reference contracts and refusal behavior.
 - Keep SQLite, MCP, embeddings, mutation tools, and confident `where-to-edit` deferred.
+- Produce capability matrix, draft JSON contracts, process safety model, integration boundaries, and Phase 3B plan.
 
 ## Phase 3B: LSP diagnostics bridge implementation candidate
 
@@ -150,6 +151,20 @@
 - Capture diagnostics snapshots without mutating code.
 - Keep before/after deltas in memory until storage is justified.
 - Add more languages only after one bridge is stable.
+- Recommended first candidate: Rust + `rust-analyzer`, read-only diagnostics/definitions/references, structured `unavailable` if the server is missing.
+
+## Phase 3C: LSP eval/adversarial gate
+
+- Add fixture or mocked-response eval coverage for diagnostics, definitions, references, unavailable server behavior, path safety, and deterministic ordering.
+- Prove LSP locations remain evidence, not edit targets.
+- Keep `where-to-edit` as `insufficient_evidence`.
+
+## Phase 3D: LSP evidence integration into SourceEvidence
+
+- Add LSP diagnostics/reference facts to SourceEvidence only as evidence and missing-evidence resolution.
+- Do not embed source snippets by default.
+- Do not emit edit targets.
+- Keep confident localization deferred until a later readiness gate.
 
 ## Phase 4: EvidenceBundle and ProcessReward
 

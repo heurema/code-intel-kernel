@@ -98,7 +98,7 @@ The current SymbolGraph-lite scope is intentionally narrow:
 - Rust/top-level source facts first.
 - Evidence-backed deterministic IDs.
 - No call graph initially.
-- No LSP initially.
+- No LSP runtime initially.
 - No SQLite initially.
 - No MCP initially.
 - No embeddings.
@@ -116,7 +116,7 @@ Do **not** build these first:
 - Automatic refactor tools.
 - UI/dashboard.
 
-The current first milestone is CLI/library only: RepoGraph inspect, impact, eval, SymbolGraph-lite symbols, SourceEvidenceBundle evidence assembly with selector hints, and explicit SourceContext slices. SQLite and MCP remain deferred until core CLI/API behavior is stable.
+The current runtime milestone is CLI/library only: RepoGraph inspect, impact, eval, SymbolGraph-lite symbols, SourceEvidenceBundle evidence assembly with selector hints, and explicit SourceContext slices. LSP is design-only in Phase 3A. SQLite and MCP remain deferred until core CLI/API behavior is stable.
 
 ## First Codex instruction
 

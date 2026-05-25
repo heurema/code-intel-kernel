@@ -24,11 +24,10 @@ RepoGraph output must remain evidence-backed and deterministic. It should prefer
 - Top-level symbols.
 - Functions, classes, types, modules, and methods when supported.
 - Imports and exports.
-- References.
-- Call graph, only after simpler symbol extraction is reliable.
-- Symbol-level impact.
-- Candidate edit locations.
-- Source-level evidence bundles.
+- References only after an evaluated reference layer exists.
+- Call graph only after simpler symbol/reference extraction is reliable.
+- Symbol-level impact only after source-level evidence is evaluated.
+- Source-level evidence that can feed a future localization layer.
 
 SymbolGraph facts must be evidence-backed and deterministic. Parse failures should produce structured warnings, not panics.
 
@@ -62,6 +61,8 @@ SymbolGraph must not:
 - encode Goalrail, Punk, or other consumer-specific behavior.
 
 SourceContext owns bounded source snippets for explicit file or symbol selectors. SourceEvidence may suggest selector hints for manual SourceContext retrieval. Neither layer may accept natural-language localization queries or turn evidence candidates into edit targets.
+
+LSP should own diagnostics, definitions, references, and document-symbol facts only after Phase 3B implements a read-only bridge. LSP locations are evidence, not edit targets.
 
 ## Interaction Model
 
