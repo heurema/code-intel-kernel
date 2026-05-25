@@ -1,0 +1,11 @@
+{
+  "name": "negative_malformed_node_manifest_inspect",
+  "fixture": "tests/fixtures/malformed-manifest",
+  "kind": "inspect",
+  "expect": {
+    "warnings_contains_categories": ["malformed_manifest"],
+    "forbidden_components_contains": ["malformed-node"],
+    "forbidden_commands_contains": ["npm test"],
+    "forbidden_tests_contains": ["npm test"]
+  }
+}

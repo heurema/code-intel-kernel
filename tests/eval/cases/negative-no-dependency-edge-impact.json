@@ -1,0 +1,17 @@
+{
+  "name": "negative_no_dependency_edge_impact",
+  "fixture": "tests/fixtures/minimal-cargo",
+  "kind": "impact",
+  "changed_files": ["src/lib.rs"],
+  "expect": {
+    "status": "partial",
+    "confidence": "medium",
+    "impact_scope": "targeted",
+    "components_contains": ["minimal-cargo", "lib"],
+    "commands_contains": ["cargo test", "cargo check"],
+    "tests_contains": ["cargo test"],
+    "warnings_contains_categories": ["partial_support"],
+    "warnings_not_contains_categories": ["malformed_manifest"],
+    "max_impacted_components": 2
+  }
+}

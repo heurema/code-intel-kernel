@@ -1,0 +1,15 @@
+{
+  "name": "negative_unknown_change_impact",
+  "fixture": "tests/fixtures/minimal-cargo",
+  "kind": "impact",
+  "changed_files": ["docs/unknown.md"],
+  "expect": {
+    "status": "insufficient_evidence",
+    "confidence": "insufficient",
+    "impact_scope": "unknown",
+    "warnings_contains_categories": ["unmapped_change"],
+    "forbidden_commands_contains": ["cargo test"],
+    "forbidden_tests_contains": ["cargo test"],
+    "max_impacted_components": 0
+  }
+}

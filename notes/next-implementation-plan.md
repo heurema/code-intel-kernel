@@ -65,6 +65,8 @@
 - Fix RepoGraph extraction or impact behavior first if eval failures show false narrow, unexpected warnings, or evidence gaps.
 - Document acceptable false broad cases before moving on.
 - Keep `where-to-edit` as `insufficient_evidence`.
+- Capture RepoGraph versus SymbolGraph ownership boundaries.
+- Add refusal-oriented eval cases for unsupported or ambiguous behavior.
 - Open Phase 2A only when the readiness checklist passes:
   - inspect eval cases pass;
   - impact eval cases pass;
@@ -74,12 +76,21 @@
   - warnings are structured and expected;
   - output is deterministic across repeated runs.
 
-## Phase 2: SymbolGraph MVP
+## Phase 2A: SymbolGraph-lite
 
-- Add Tree-sitter extraction for TypeScript, TSX, JavaScript, and Python.
-- Extract imports, exports, functions, classes, interfaces/types, methods, and test files.
-- Build local import edges and ranked `where-to-edit` candidates with reasons.
-- Avoid semantic claims that require LSP until Phase 3.
+- Start with a narrow source-level graph.
+- Prefer Rust top-level symbol extraction first because the kernel is a Rust crate.
+- Extract source files and top-level symbols only.
+- Keep every symbol fact evidence-backed and deterministic.
+- Add SymbolGraph eval cases before using symbols for localization.
+- Do not add call graph, LSP, SQLite, MCP, embeddings, or confident `where-to-edit` yet.
+
+## Phase 2B: Source-level evidence bundles
+
+- Use evaluated SymbolGraph facts to enrich EvidenceBundle output.
+- Keep localization conservative and evidence-backed.
+- Keep RepoGraph commands/tests as the build/test validation source.
+- Only consider `where-to-edit` candidates after symbol extraction quality is measured.
 
 ## Phase 3: LSP diagnostics bridge
 

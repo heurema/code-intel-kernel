@@ -104,7 +104,15 @@ The initial case set covers:
 - Go module inspect;
 - Go test-file impact;
 - malformed Python manifest warning;
-- malformed Go manifest warning.
+- malformed Go manifest warning;
+- unknown changed file refusal;
+- Python tests without runner evidence refusal;
+- malformed Node manifest refusal;
+- no-dependency-edge impact boundary.
+
+## Negative Case Rationale
+
+`negative_no_dependency_edge_impact` allows two impacted components for the minimal Cargo fixture because the current RepoGraph represents both the crate package and its library target. The case still prevents fake transitive or broader dependency impact when no `depends_on` edge exists.
 
 ## Limitations
 

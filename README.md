@@ -83,14 +83,23 @@ config/
 
 ## Immediate objective
 
-The first implementation should be a **read-only, structural-first kernel**:
+The current implementation is a **read-only, structural-first kernel** with a stable RepoGraph layer:
 
-1. RepoGraph: packages, services, commands, tests, build targets.
-2. SymbolGraph: Tree-sitter extraction for TypeScript and Python first.
-3. LSP bridge: diagnostics, references, definitions, and diagnostic deltas.
-4. EvidenceBundle: required evidence before edit planning.
-5. ProcessReward: machine-checkable reward signals after diffs.
-6. SessionMemory: typed event log for hypotheses, decisions, tests, failures.
+1. `inspect`: evidence-backed repository/build/test facts.
+2. `impact`: conservative RepoGraph-only impact from changed files.
+3. `eval-fixtures`: fixture-based quality gate for inspect and impact.
+4. `where-to-edit`: still returns `insufficient_evidence` until evaluated SymbolGraph/localization evidence exists.
+
+The next candidate layer is **Phase 2A SymbolGraph-lite**:
+
+- Rust/top-level source facts first.
+- Evidence-backed deterministic IDs.
+- No call graph initially.
+- No LSP initially.
+- No SQLite initially.
+- No MCP initially.
+- No embeddings.
+- No confident edit localization until evaluated.
 
 ## Non-goals for the first milestone
 
@@ -104,7 +113,7 @@ Do **not** build these first:
 - Automatic refactor tools.
 - UI/dashboard.
 
-The first milestone should be CLI + local SQLite + optional read-only MCP tool surface.
+The current first milestone is CLI/library only: RepoGraph inspect, impact, and eval. SQLite and MCP remain deferred until core CLI/API behavior is stable.
 
 ## First Codex instruction
 

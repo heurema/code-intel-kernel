@@ -1,5 +1,15 @@
 # 03 — MVP Roadmap
 
+Status: historical bootstrap roadmap, updated by Phase 1G.
+
+Current implementation source of truth:
+
+- `notes/next-implementation-plan.md`
+- `docs/phase-2a-symbolgraph-lite-plan.md`
+- `docs/repo-vs-symbol-graph-boundary.md`
+
+This document no longer promises SQLite, MCP, TypeScript/Python-first SymbolGraph, or confident `where-to-edit` in early phases. Those items are deferred until the core CLI/API contracts are stable and evaluated.
+
 ## Verdict
 
 Build a reusable **Code Intelligence Kernel** as a standalone module.
@@ -14,8 +24,10 @@ code-intel-kernel
 
 ```text
 Phase 0: Documentation and repo skeleton
-Phase 1: RepoGraph MVP
-Phase 2: SymbolGraph MVP
+Phase 1: RepoGraph inspect, impact, and eval
+Phase 1G: SymbolGraph readiness gate
+Phase 2A: SymbolGraph-lite
+Phase 2B: Source-level evidence bundles
 Phase 3: LSP diagnostics bridge
 Phase 4: EvidenceBundle and ProcessReward
 Phase 5: SessionMemory
@@ -48,11 +60,11 @@ notes/
 - Next implementation plan exists.
 - No heavy dependencies introduced.
 
-## Phase 1 — RepoGraph MVP
+## Phase 1 — RepoGraph inspect, impact, and eval
 
 ### Goal
 
-Detect repository structure and commands.
+Detect repository structure and commands, compute conservative build/test impact, and measure fixture quality.
 
 ### Inputs
 
@@ -70,68 +82,87 @@ Detect repository structure and commands.
 ### Outputs
 
 ```text
-repo-map.json
-packages
+inspect JSON
+impact JSON
+eval JSON
+components
 commands
 workspace boundaries
 dependency hints
 test command candidates
+structured warnings
 ```
 
 ### CLI
 
 ```bash
 code-intel inspect .
-code-intel repo-map --json
-code-intel test-plan --changed-files src/a.ts,src/a.test.ts
+code-intel impact src/main.rs Cargo.toml --json
+code-intel eval-fixtures --json
 ```
 
 ### Acceptance criteria
 
-- Finds packages/workspaces in a simple JS/TS repo.
+- Finds supported package/workspace facts from manifests.
 - Finds common test/lint/build commands.
-- Writes nodes and edges to SQLite.
-- Produces a compact repo map.
+- Produces evidence-backed inspect JSON.
+- Produces conservative RepoGraph-only impact JSON.
+- Runs fixture-based evaluation with deterministic output.
+- Does not require SQLite, MCP, LSP, Tree-sitter, or embeddings.
 
-## Phase 2 — SymbolGraph MVP
+## Phase 2A — SymbolGraph-lite
 
 ### Goal
 
-Extract code symbols with Tree-sitter.
+Add the first source-level graph layer without pretending to localize edits.
 
-### Initial languages
+### Initial scope
 
 ```text
-TypeScript
-TSX
-JavaScript
-Python
+Rust top-level source facts first, or a language-agnostic source-file graph stub if that is safer.
 ```
 
 ### Outputs
 
 - files;
-- imports;
-- exports;
 - functions;
-- classes;
-- methods;
-- test files;
-- simple import edges.
+- structs;
+- enums;
+- traits;
+- impl blocks;
+- modules;
+- parse/source warnings.
 
 ### CLI
 
 ```bash
-code-intel symbol-context "LoginForm"
-code-intel where-to-edit "change login validation copy"
+No public SymbolGraph CLI is required in Phase 2A.
 ```
 
 ### Acceptance criteria
 
-- Extracts symbols from TS/Python examples.
-- Maps imports between local files.
-- Returns ranked candidate files with reasons.
-- Does not require an LSP yet.
+- Existing RepoGraph eval remains green.
+- Symbol facts are evidence-backed.
+- Symbol IDs are deterministic.
+- Parse failures produce warnings, not panics.
+- No call graph yet.
+- No LSP yet.
+- No SQLite yet.
+- No MCP yet.
+- No embeddings.
+- `where-to-edit` remains `insufficient_evidence` unless a separately evaluated localization layer exists.
+
+## Phase 2B — Source-level evidence bundles
+
+### Goal
+
+Use evaluated SymbolGraph-lite facts to enrich evidence bundles.
+
+### Acceptance criteria
+
+- EvidenceBundle can include source-level facts without replacing RepoGraph build/test commands.
+- Localization remains conservative and evidence-backed.
+- `where-to-edit` only returns candidates after dedicated evaluation exists.
 
 ## Phase 3 — LSP diagnostics bridge
 
@@ -154,7 +185,6 @@ code-intel diagnostic-delta --before run1 --after run2
 
 - Captures diagnostics snapshot.
 - Computes before/after deltas.
-- Stores diagnostics in SQLite.
 - Does not mutate code.
 
 ## Phase 4 — EvidenceBundle and ProcessReward
@@ -255,27 +285,9 @@ Document how Punk can use the same kernel in faster prototype mode without forki
 
 ## 30-day practical sequence
 
-### Week 1
+### Sequence
 
-- Initialize repository.
-- Implement RepoGraph scanning.
-- Implement SQLite schema.
-- Create examples and smoke tests.
-
-### Week 2
-
-- Implement Tree-sitter SymbolGraph for TS/Python.
-- Implement where-to-edit heuristic.
-- Implement evidence bundle JSON.
-
-### Week 3
-
-- Add diagnostics bridge for TypeScript.
-- Implement diagnostic delta.
-- Add process reward scoring.
-
-### Week 4
-
-- Add session event memory.
-- Add read-only MCP skeleton.
-- Create Goalrail/Punk consumer profile notes.
+- Finish Phase 1G readiness and boundary documentation.
+- Start Phase 2A only as SymbolGraph-lite.
+- Keep LSP, SQLite, MCP, embeddings, and confident edit localization deferred.
+- Add source-level eval cases before exposing source-level recommendations to consumers.

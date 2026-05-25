@@ -45,16 +45,21 @@ Punk can use this module as a fast/prototype consumer:
 - session memory;
 - fewer hard gates than Goalrail.
 
+## Product boundary
+
+The current stable layer is RepoGraph: repository/build/test-level `inspect`, `impact`, and `eval-fixtures`.
+
+SymbolGraph, LSP, SQLite, MCP, embeddings, process reward, and confident edit localization are later layers. `where-to-edit` must return `insufficient_evidence` until evaluated SymbolGraph/localization evidence exists.
+
 ## First product boundary
 
 The first version should answer:
 
 1. What is in this repository?
-2. Where should an agent look for a task?
-3. Which symbols/files are relevant?
-4. What tests/lint/build commands are likely affected?
-5. Did a proposed diff improve or worsen diagnostics?
-6. What did the agent already try in this session?
+2. What repository/build/test components are evidenced?
+3. What tests/lint/build commands are likely affected?
+4. When must the kernel refuse to guess?
+5. What does fixture evaluation say about current quality?
 
 ## Non-goals
 
@@ -72,19 +77,16 @@ A CLI that can run locally:
 
 ```bash
 code-intel inspect .
-code-intel repo-map --json
-code-intel where-to-edit "change login validation copy"
-code-intel symbol-context "useAuth"
-code-intel test-plan --changed-files src/a.ts,src/a.test.ts
-code-intel preflight patch.diff
+code-intel impact src/main.rs Cargo.toml --json
+code-intel eval-fixtures --json
+code-intel where-to-edit "change login validation copy" --profile=strict --json
 ```
 
 ## Success criteria for the first milestone
 
 - Runs locally with no external services.
-- Produces a useful repo map.
-- Extracts TypeScript/Python symbols.
-- Stores facts in SQLite.
-- Returns evidence bundles with file/symbol/command reasons.
-- Computes a basic process reward from diagnostics and scope checks.
-- Keeps all memory as typed events, not just natural-language summaries.
+- Produces evidence-backed RepoGraph inspect output.
+- Produces conservative RepoGraph-only impact output.
+- Measures quality with fixture-based eval.
+- Keeps `where-to-edit` as `insufficient_evidence`.
+- Does not require Tree-sitter, LSP, SQLite, MCP, embeddings, or external services.

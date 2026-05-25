@@ -7,11 +7,11 @@ Goalrail / Punk / Codex / Claude / other consumer
         ↓
 Code Intelligence Kernel
         ↓
-RepoGraph + SymbolGraph + LSP facts + SessionMemory + ProcessReward
+RepoGraph now; SymbolGraph + LSP facts + SessionMemory + ProcessReward later
         ↓
-CLI / SDK / optional MCP read-only tools
+CLI / SDK now; optional MCP read-only tools later
         ↓
-Local SQLite + JSONL event log
+In-memory now; local SQLite + JSONL event log later
 ```
 
 ## Architectural principles
@@ -99,8 +99,9 @@ SymbolGraph maps source-level structure:
 Initial implementation:
 
 ```text
-Tree-sitter extraction for TypeScript and Python.
-Optional later: Rust, Go, Java, Kotlin, PHP.
+Phase 2A candidate: Rust top-level source facts first, or a language-agnostic source-file graph stub if safer.
+No call graph, LSP, SQLite, MCP, embeddings, or confident edit localization in Phase 2A.
+Later targets can include TypeScript, TSX, JavaScript, Python, Go, Java, Kotlin, and PHP.
 ```
 
 ### 3. LSP bridge
@@ -192,7 +193,9 @@ RECORD_DECISION
 
 ## Storage
 
-Start with SQLite, FTS5, and JSONL.
+Start in memory for RepoGraph inspect, impact, and eval.
+
+SQLite, FTS5, and JSONL are later persistence layers, not Phase 1 or Phase 2A requirements.
 
 Do not start with Neo4j or a remote vector DB.
 
@@ -227,13 +230,13 @@ CLI + library API
 Milestone 2:
 
 ```text
-Read-only MCP server
+SymbolGraph-lite internal API
 ```
 
 Milestone 3:
 
 ```text
-Consumer profile documentation and policy hooks
+LSP bridge or source-level evidence bundles after SymbolGraph quality is measured
 ```
 
 Milestone 4:

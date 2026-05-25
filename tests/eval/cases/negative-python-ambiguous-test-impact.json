@@ -1,0 +1,16 @@
+{
+  "name": "negative_python_ambiguous_test_impact",
+  "fixture": "tests/fixtures/python-tests-ambiguous",
+  "kind": "impact",
+  "changed_files": ["tests/test_example.py"],
+  "expect": {
+    "status": "partial",
+    "confidence": "medium",
+    "impact_scope": "targeted",
+    "components_contains": ["python-tests-ambiguous"],
+    "warnings_contains_categories": ["ambiguous_detection", "missing_command"],
+    "forbidden_commands_contains": ["pytest"],
+    "forbidden_tests_contains": ["pytest"],
+    "max_impacted_components": 1
+  }
+}

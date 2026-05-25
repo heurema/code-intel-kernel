@@ -20,7 +20,4 @@ pub use crate::core::repo_graph::{
     RepoCommand, RepoCommandKind, RepoInfo, RepoInspection, TestTarget, Workspace,
     IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
 };
-pub use crate::core::symbol_graph::{
-    build_symbol_graph, SymbolGraphSnapshot, SymbolKind, SymbolRecord,
-};
 pub use crate::storage::sqlite::{open_kernel_database, KernelDatabase};

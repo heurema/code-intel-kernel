@@ -9,7 +9,9 @@ Risk: building a vector search system before structural retrieval works.
 Guardrail:
 
 ```text
-RepoGraph + SymbolGraph + LSP first.
+RepoGraph inspect/impact/eval first.
+SymbolGraph-lite only after readiness gate.
+LSP only after source facts are evaluated.
 Embeddings only later for docs/issues/comments.
 ```
 
@@ -20,7 +22,8 @@ Risk: exposing too many tools or mutation capabilities too early.
 Guardrail:
 
 ```text
-Read-only MCP only in early milestones.
+No MCP in Phase 1 or Phase 2A.
+Read-only MCP only after core CLI/API behavior is stable.
 Tool router later.
 No arbitrary shell/file writes.
 ```
@@ -32,7 +35,8 @@ Risk: storing chat summaries that cannot be queried reliably.
 Guardrail:
 
 ```text
-Typed events + JSONL + SQLite indexes.
+Typed events first.
+JSONL + SQLite indexes later when memory is implemented.
 Summaries can be derived, not primary.
 ```
 
@@ -44,6 +48,7 @@ Guardrail:
 
 ```text
 Tree-sitter for broad structure.
+Phase 2A starts narrower than full Tree-sitter coverage.
 LSP for definitions, references, diagnostics, types.
 ```
 
@@ -54,7 +59,8 @@ Risk: Neo4j/enterprise graph stack slows MVP.
 Guardrail:
 
 ```text
-SQLite first.
+In-memory first for RepoGraph.
+SQLite only after graph output and API contracts stabilize.
 Graph DB only after real query pressure.
 ```
 

@@ -735,7 +735,7 @@ fn where_to_edit_remains_insufficient_evidence_placeholder() {
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
-    assert!(cases.len() >= 13);
+    assert!(cases.len() >= 17);
     assert!(cases
         .iter()
         .any(|case| case.name == "cargo_workspace_dependency_impact"));
@@ -750,7 +750,7 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
 
     assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
     assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
-    assert_eq!(report.total_cases, 13);
+    assert!(report.total_cases >= 17);
     assert!(report.inspect_cases > 0);
     assert!(report.impact_cases > 0);
     assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
