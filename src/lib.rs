@@ -21,6 +21,12 @@ pub use crate::core::repo_graph::{
     RepoCommand, RepoCommandKind, RepoInfo, RepoInspection, TestTarget, Workspace,
     IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
 };
+pub use crate::core::source_context::{
+    build_source_context_report, build_source_context_report_from_symbols,
+    source_context_evidence_valid, LineRange, SourceContextReport, SourceContextSelector,
+    SourceContextSlice, SourceContextStatus, SourceContextWarning, SourceContextWarningCategory,
+    SOURCE_CONTEXT_CONTRACT_VERSION,
+};
 pub use crate::core::source_evidence::{
     build_source_evidence_bundle, build_source_evidence_bundle_from_graphs,
     source_evidence_bundle_evidence_valid, BundleConfidence, BundleStatus, BundleWarning,

@@ -1,6 +1,6 @@
 # 03 — MVP Roadmap
 
-Status: historical bootstrap roadmap, updated through Phase 2B.
+Status: historical bootstrap roadmap, updated through Phase 2E.
 
 Current implementation source of truth:
 
@@ -29,6 +29,8 @@ Phase 1G: SymbolGraph readiness gate
 Phase 2A: SymbolGraph-lite
 Phase 2B: SymbolGraph eval and SourceEvidenceBundle contract
 Phase 2C: SourceEvidenceBundle prototype
+Phase 2D: Source-to-repo evidence linking
+Phase 2E: Read-only SourceContext slices
 Phase 3: LSP diagnostics bridge
 Phase 4: EvidenceBundle and ProcessReward
 Phase 5: SessionMemory
@@ -181,6 +183,23 @@ Assemble query, RepoGraph context, SymbolGraph-lite facts, evidence, limitations
 - `source_evidence` contract version is `0.2` after Phase 2D context-role hardening.
 - Eval includes source-evidence cases.
 - Candidate files and symbols are evidence-backed.
+- No output claims edit locations.
+- `where-to-edit` remains `insufficient_evidence`.
+
+## Phase 2E — SourceContext slices
+
+### Goal
+
+Return bounded read-only source snippets for explicit file or SymbolGraph-lite symbol selectors.
+
+### Acceptance criteria
+
+- `source-context` CLI returns valid JSON.
+- `source_context` contract version is `0.1`.
+- Eval includes source-context cases and `eval_contract_version` is `0.4`.
+- Slices are evidence-backed and deterministic.
+- Path traversal, ignored paths, symlinks, missing files, non-UTF8 files, and oversized slices produce structured warnings.
+- No natural-language localization.
 - No output claims edit locations.
 - `where-to-edit` remains `insufficient_evidence`.
 

@@ -1,8 +1,8 @@
 # Evaluation Harness
 
-Status: Phase 2B fixture evaluation contract.
+Status: Phase 2E fixture evaluation contract.
 
-The evaluation harness measures current `inspect`, `impact`, and `symbols` behavior across small fixtures.
+The evaluation harness measures current `inspect`, `impact`, `symbols`, `source-evidence`, and `source-context` behavior across small fixtures.
 
 It does not evaluate imports, references, call graphs, edit planning, LSP diagnostics, embeddings, or MCP behavior.
 
@@ -18,7 +18,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 
 ```json
 {
-  "eval_contract_version": "0.3",
+  "eval_contract_version": "0.4",
   "total_cases": 0,
   "passed_cases": 0,
   "failed_cases": 0,
@@ -26,6 +26,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
   "impact_cases": 0,
   "symbol_cases": 0,
   "source_evidence_cases": 0,
+  "source_context_cases": 0,
   "metrics": {
     "evidence_coverage_pass_rate": 1.0,
     "expected_fact_recall": 1.0,
@@ -40,7 +41,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 }
 ```
 
-The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report counts `symbol_cases` and accepts `symbols` eval cases. Phase 2C bumps it to `0.3` because the report counts `source_evidence_cases` and accepts `source_evidence` eval cases. This does not change the `inspect`, `impact`, `symbols`, or `source_evidence` contracts.
+The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report counts `symbol_cases` and accepts `symbols` eval cases. Phase 2C bumps it to `0.3` because the report counts `source_evidence_cases` and accepts `source_evidence` eval cases. Phase 2E bumps it to `0.4` because the report counts `source_context_cases` and accepts `source_context` eval cases. This does not change the `inspect`, `impact`, `symbols`, `source_evidence`, or `source_context` contracts.
 
 ## Case Format
 
@@ -54,7 +55,7 @@ Cases live under `tests/eval/cases/*.json`.
   "changed_files": ["crates/b/src/lib.rs"],
   "expect": {
     "status": "partial",
-    "confidence": "medium",
+    "confidence": "high",
     "impact_scope": "mixed",
     "components_contains": ["b", "a"],
     "commands_contains": ["cargo test"],
@@ -71,6 +72,7 @@ Known `kind` values:
 - `impact`
 - `symbols`
 - `source_evidence`
+- `source_context`
 
 Expectations are semantic checks, not full-output snapshots. A case can assert required facts, forbidden facts, expected warning categories, unexpected warning categories, impact status, confidence, scope, and maximum impacted component count.
 
@@ -114,6 +116,25 @@ Source-evidence cases can assert candidate files, candidate symbols, status, con
     ],
     "warnings_contains_categories": ["localization_not_supported"],
     "missing_evidence_contains": ["no_symbol_reference_layer"]
+  }
+}
+```
+
+Source-context cases use explicit selectors and can assert slices, symbol slices, bounded text, warnings, and max lines:
+
+```json
+{
+  "name": "source_context_file_slice",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_context",
+  "selector_file": "src/lib.rs",
+  "selector_lines": "1:8",
+  "expect": {
+    "status": "ok",
+    "slices_contains": ["src/lib.rs"],
+    "slice_text_contains": ["pub fn top_level_function"],
+    "warnings_contains_categories": ["source_context_not_localization"],
+    "max_slice_lines": 8
   }
 }
 ```
@@ -162,6 +183,7 @@ The initial case set covers:
 - ignored source paths for SymbolGraph-lite.
 - SourceEvidenceBundle function match, file match, and no-match refusal.
 - SourceEvidenceBundle broad-query candidate limit and malformed-source refusal.
+- SourceContext file slice, symbol slice, missing file, and ignored path refusal.
 
 ## Negative Case Rationale
 
@@ -173,6 +195,7 @@ The initial case set covers:
 - The harness does not run external ecosystem tools.
 - It does not execute recommended commands.
 - It does not validate source-level localization.
+- SourceContext eval validates explicit read-only slicing only.
 - It does not score performance yet.
 - It does not persist historical trend data.
 

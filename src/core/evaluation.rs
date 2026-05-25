@@ -2,6 +2,10 @@ use crate::core::repo_graph::{
     analyze_impact, inspect_repo, DetectionCategory, DetectionIssue, Evidence, ImpactConfidence,
     ImpactReport, ImpactScope, ImpactStatus, RepoInspection,
 };
+use crate::core::source_context::{
+    build_source_context_report, source_context_evidence_valid, LineRange, SourceContextReport,
+    SourceContextSelector, SourceContextSlice, SourceContextWarning, SourceContextWarningCategory,
+};
 use crate::core::source_evidence::{
     build_source_evidence_bundle, source_evidence_bundle_evidence_valid, BundleWarning,
     BundleWarningCategory, CandidateSymbol, RepoContextRole, SourceEvidenceBundle,
@@ -15,7 +19,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-pub const EVAL_CONTRACT_VERSION: &str = "0.3";
+pub const EVAL_CONTRACT_VERSION: &str = "0.4";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -24,6 +28,7 @@ pub enum EvalCaseKind {
     Impact,
     Symbols,
     SourceEvidence,
+    SourceContext,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,6 +38,12 @@ pub struct EvalCase {
     pub kind: EvalCaseKind,
     #[serde(default)]
     pub query: String,
+    #[serde(default)]
+    pub selector_file: String,
+    #[serde(default)]
+    pub selector_symbol_id: String,
+    #[serde(default)]
+    pub selector_lines: Option<String>,
     #[serde(default)]
     pub changed_files: Vec<String>,
     #[serde(default)]
@@ -78,6 +89,15 @@ pub struct EvalExpect {
     pub repo_context_roles_contains: Vec<String>,
     #[serde(default)]
     pub missing_evidence_contains: Vec<String>,
+    #[serde(default)]
+    pub slices_contains: Vec<String>,
+    #[serde(default)]
+    pub slice_symbols_contains: Vec<ExpectedSymbol>,
+    #[serde(default)]
+    pub slice_text_contains: Vec<String>,
+    #[serde(default)]
+    pub slice_text_not_contains: Vec<String>,
+    pub max_slice_lines: Option<usize>,
     pub max_impacted_components: Option<usize>,
 }
 
@@ -100,6 +120,7 @@ pub struct EvaluationReport {
     pub impact_cases: usize,
     pub symbol_cases: usize,
     pub source_evidence_cases: usize,
+    pub source_context_cases: usize,
     pub metrics: EvalMetrics,
     pub cases: Vec<EvalCaseResult>,
     pub failures: Vec<EvalFailure>,
@@ -189,6 +210,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
     let mut impact_cases = 0;
     let mut symbol_cases = 0;
     let mut source_evidence_cases = 0;
+    let mut source_context_cases = 0;
 
     for case in cases {
         match case.kind {
@@ -196,6 +218,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
             EvalCaseKind::Impact => impact_cases += 1,
             EvalCaseKind::Symbols => symbol_cases += 1,
             EvalCaseKind::SourceEvidence => source_evidence_cases += 1,
+            EvalCaseKind::SourceContext => source_context_cases += 1,
         }
 
         let result = evaluate_case(&case, &mut counters);
@@ -215,6 +238,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
         impact_cases,
         symbol_cases,
         source_evidence_cases,
+        source_context_cases,
         metrics: EvalMetrics {
             evidence_coverage_pass_rate: rate(counters.evidence_passed, counters.evidence_cases),
             expected_fact_recall: rate(counters.expected_checks_passed, counters.expected_checks),
@@ -265,6 +289,14 @@ fn evaluate_case(case: &EvalCase, counters: &mut EvalCounters) -> EvalCaseResult
             check_source_evidence(case, &first, counters, &mut failures);
             check_source_evidence_expectations(case, &first, counters, &mut failures);
         }
+        EvalCaseKind::SourceContext => {
+            let selectors = source_context_selectors(case);
+            let first = build_source_context_report(&case.fixture, selectors.clone());
+            let second = build_source_context_report(&case.fixture, selectors);
+            check_deterministic(case, first == second, counters, &mut failures);
+            check_source_context(case, &first, counters, &mut failures);
+            check_source_context_expectations(case, &first, counters, &mut failures);
+        }
     }
 
     EvalCaseResult {
@@ -273,6 +305,108 @@ fn evaluate_case(case: &EvalCase, counters: &mut EvalCounters) -> EvalCaseResult
         passed: failures.is_empty(),
         failures,
     }
+}
+
+fn source_context_selectors(case: &EvalCase) -> Vec<SourceContextSelector> {
+    let mut selectors = Vec::new();
+    if !case.selector_file.is_empty() {
+        selectors.push(SourceContextSelector::File {
+            path: case.selector_file.clone(),
+            line_range: case.selector_lines.as_deref().and_then(parse_line_range),
+        });
+    }
+    if !case.selector_symbol_id.is_empty() {
+        selectors.push(SourceContextSelector::SymbolId {
+            symbol_id: case.selector_symbol_id.clone(),
+        });
+    }
+    selectors
+}
+
+fn parse_line_range(value: &str) -> Option<LineRange> {
+    let (start, end) = value.split_once(':')?;
+    Some(LineRange {
+        start_line: start.trim().parse().ok()?,
+        end_line: end.trim().parse().ok()?,
+    })
+}
+
+fn check_source_context_expectations(
+    case: &EvalCase,
+    report: &SourceContextReport,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    if let Some(expected) = &case.expect.status {
+        check_value(
+            case,
+            "status",
+            format!("{expected:?}"),
+            format!("{:?}", report.status),
+            format!("{:?}", report.status) == format!("{expected:?}"),
+            counters,
+            failures,
+        );
+    }
+
+    let slice_paths = report
+        .slices
+        .iter()
+        .map(|slice| slice.file_path.as_str())
+        .collect::<Vec<_>>();
+    let warning_categories = source_context_warning_categories(&report.warnings);
+
+    check_contains_all(
+        case,
+        "slices_contains",
+        &case.expect.slices_contains,
+        &slice_paths,
+        "false_narrow",
+        counters,
+        failures,
+    );
+    check_slice_symbol_contains_all(
+        case,
+        "slice_symbols_contains",
+        &case.expect.slice_symbols_contains,
+        &report.slices,
+        counters,
+        failures,
+    );
+    check_slice_text_contains_all(case, report, counters, failures);
+    check_warning_expectations(case, &warning_categories, counters, failures);
+
+    if let Some(max_lines) = case.expect.max_slice_lines {
+        let passed = report
+            .slices
+            .iter()
+            .all(|slice| source_context_slice_line_count(slice) <= max_lines);
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_broad_count += 1;
+            failures.push(failure(
+                case,
+                "max_slice_lines",
+                format!("at most {max_lines}"),
+                report
+                    .slices
+                    .iter()
+                    .map(|slice| source_context_slice_line_count(slice).to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                "false_broad",
+            ));
+        }
+    }
+}
+
+fn source_context_slice_line_count(slice: &SourceContextSlice) -> usize {
+    slice
+        .end_line
+        .saturating_sub(slice.start_line)
+        .saturating_add(1)
 }
 
 fn check_source_evidence_expectations(
@@ -760,6 +894,82 @@ fn check_candidate_symbol_contains_all(
     }
 }
 
+fn check_slice_symbol_contains_all(
+    case: &EvalCase,
+    field: &str,
+    expected: &[ExpectedSymbol],
+    actual: &[SourceContextSlice],
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    for expected_item in expected {
+        let passed = actual
+            .iter()
+            .any(|actual_item| slice_symbol_matches(actual_item, expected_item));
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_narrow_count += 1;
+            failures.push(failure(
+                case,
+                field,
+                format_expected_symbol(expected_item),
+                format_actual_slice_symbols(actual),
+                "false_narrow",
+            ));
+        }
+    }
+}
+
+fn check_slice_text_contains_all(
+    case: &EvalCase,
+    report: &SourceContextReport,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    let combined_text = report
+        .slices
+        .iter()
+        .map(|slice| slice.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    for expected_item in &case.expect.slice_text_contains {
+        let passed = combined_text.contains(expected_item);
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_narrow_count += 1;
+            failures.push(failure(
+                case,
+                "slice_text_contains",
+                expected_item.clone(),
+                combined_text.clone(),
+                "false_narrow",
+            ));
+        }
+    }
+
+    for forbidden_item in &case.expect.slice_text_not_contains {
+        let passed = !combined_text.contains(forbidden_item);
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_broad_count += 1;
+            failures.push(failure(
+                case,
+                "slice_text_not_contains",
+                format!("not {forbidden_item}"),
+                combined_text.clone(),
+                "false_broad",
+            ));
+        }
+    }
+}
+
 fn symbol_matches(actual: &SourceSymbol, expected: &ExpectedSymbol) -> bool {
     actual.name == expected.name
         && expected
@@ -784,6 +994,18 @@ fn candidate_symbol_matches(actual: &CandidateSymbol, expected: &ExpectedSymbol)
             .is_none_or(|path| actual.path == path)
 }
 
+fn slice_symbol_matches(actual: &SourceContextSlice, expected: &ExpectedSymbol) -> bool {
+    actual.symbol_name.as_deref() == Some(expected.name.as_str())
+        && expected
+            .kind
+            .as_ref()
+            .is_none_or(|kind| actual.symbol_kind.as_ref() == Some(kind))
+        && expected
+            .path
+            .as_deref()
+            .is_none_or(|path| actual.file_path == path)
+}
+
 fn format_expected_symbol(expected: &ExpectedSymbol) -> String {
     let kind = expected
         .kind
@@ -806,6 +1028,21 @@ fn format_actual_candidate_symbols(actual: &[CandidateSymbol]) -> String {
     actual
         .iter()
         .map(|symbol| format!("{:?}:{}@{}", symbol.kind, symbol.name, symbol.path))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn format_actual_slice_symbols(actual: &[SourceContextSlice]) -> String {
+    actual
+        .iter()
+        .map(|slice| {
+            format!(
+                "{:?}:{}@{}",
+                slice.symbol_kind,
+                slice.symbol_name.as_deref().unwrap_or(""),
+                slice.file_path
+            )
+        })
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -1011,6 +1248,26 @@ fn check_source_evidence(
     }
 }
 
+fn check_source_context(
+    case: &EvalCase,
+    report: &SourceContextReport,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    counters.evidence_cases += 1;
+    if source_context_evidence_valid(report) {
+        counters.evidence_passed += 1;
+    } else {
+        failures.push(failure(
+            case,
+            "evidence_coverage",
+            "all source context slices have valid evidence".to_string(),
+            "missing or invalid evidence reference".to_string(),
+            "evidence_coverage",
+        ));
+    }
+}
+
 fn inspect_evidence_valid(graph: &RepoInspection) -> bool {
     let evidence_ids = evidence_ids(&graph.evidence);
 
@@ -1108,6 +1365,13 @@ fn source_evidence_warning_categories(warnings: &[BundleWarning]) -> BTreeSet<St
         .collect()
 }
 
+fn source_context_warning_categories(warnings: &[SourceContextWarning]) -> BTreeSet<String> {
+    warnings
+        .iter()
+        .map(|warning| source_context_category_name(&warning.category).to_string())
+        .collect()
+}
+
 fn category_name(category: &DetectionCategory) -> &'static str {
     match category {
         DetectionCategory::AmbiguousDetection => "ambiguous_detection",
@@ -1149,6 +1413,25 @@ fn source_evidence_category_name(category: &BundleWarningCategory) -> &'static s
         BundleWarningCategory::RepoGraphContextUnavailable => "repo_graph_context_unavailable",
         BundleWarningCategory::SymbolGraphParseWarning => "symbol_graph_parse_warning",
         BundleWarningCategory::UnsupportedLanguage => "unsupported_language",
+    }
+}
+
+fn source_context_category_name(category: &SourceContextWarningCategory) -> &'static str {
+    match category {
+        SourceContextWarningCategory::AmbiguousSymbolSelector => "ambiguous_symbol_selector",
+        SourceContextWarningCategory::BinaryFile => "binary_file",
+        SourceContextWarningCategory::IgnoredPath => "ignored_path",
+        SourceContextWarningCategory::MissingFile => "missing_file",
+        SourceContextWarningCategory::NonUtf8File => "non_utf8_file",
+        SourceContextWarningCategory::PathOutsideRepo => "path_outside_repo",
+        SourceContextWarningCategory::SliceTruncated => "slice_truncated",
+        SourceContextWarningCategory::SourceContextLimitExceeded => "source_context_limit_exceeded",
+        SourceContextWarningCategory::SourceContextNotLocalization => {
+            "source_context_not_localization"
+        }
+        SourceContextWarningCategory::SymbolNotFound => "symbol_not_found",
+        SourceContextWarningCategory::SymlinkIgnored => "symlink_ignored",
+        SourceContextWarningCategory::UnsupportedLanguage => "unsupported_language",
     }
 }
 

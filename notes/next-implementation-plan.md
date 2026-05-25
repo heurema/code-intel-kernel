@@ -111,6 +111,22 @@
 - Bump `source_evidence` contract to `0.2`.
 - Still avoid confident `where-to-edit` until localization has dedicated negative eval cases.
 
+## Phase 2E: SourceContext slices
+
+- Add explicit-selector read-only source snippets.
+- Support file selectors with optional line ranges and SymbolGraph-lite symbol IDs.
+- Enforce path containment, ignored-path refusal, symlink refusal, UTF-8 checks, and deterministic truncation.
+- Add source-context eval cases and bump eval contract to `0.4`.
+- Keep `source_evidence` at `0.2`.
+- Keep `where-to-edit` as `insufficient_evidence`.
+
+## Phase 2F: EvidenceBundle and SourceContext integration
+
+- Add selector hints from SourceEvidenceBundle candidates to SourceContext.
+- Do not include snippets by default.
+- Do not emit edit targets.
+- Keep natural-language localization deferred.
+
 ## Phase 3: LSP diagnostics bridge
 
 - Start with TypeScript project diagnostics through a minimal `tsserver` or language-server process bridge.

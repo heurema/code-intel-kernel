@@ -1,0 +1,15 @@
+{
+  "name": "source_context_file_slice",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_context",
+  "selector_file": "src/lib.rs",
+  "selector_lines": "1:8",
+  "expect": {
+    "status": "ok",
+    "slices_contains": ["src/lib.rs"],
+    "slice_text_contains": ["pub fn top_level_function"],
+    "slice_text_not_contains": ["nested_helper"],
+    "warnings_contains_categories": ["source_context_not_localization"],
+    "max_slice_lines": 8
+  }
+}

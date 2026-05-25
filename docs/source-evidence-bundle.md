@@ -4,7 +4,7 @@ Status: Phase 2D prototype contract. Active as read-only evidence assembly, not 
 
 A SourceEvidenceBundle is a source-level evidence packet for future review, localization, and impact reasoning. It combines candidate source files, candidate symbols, source evidence, and relevant RepoGraph context while remaining honest about missing evidence.
 
-Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. It does not connect SymbolGraph-lite or SourceEvidenceBundle to `where-to-edit`.
+Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. Phase 2E adds SourceContext as a separate explicit-selector snippet layer. SourceEvidenceBundle does not include snippets by default and does not connect to `where-to-edit`.
 
 ## Shape
 
@@ -106,7 +106,7 @@ Use `missing_evidence` for facts that would be required before localization:
 - import/export resolution;
 - call graph;
 - LSP diagnostics;
-- source snippets or file context around candidates;
+- explicit source-context selector policy around candidates;
 - evaluated negative localization cases;
 - RepoGraph-to-SymbolGraph linking if needed.
 

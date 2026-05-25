@@ -1,6 +1,6 @@
 # Localization Readiness Checklist
 
-Status: Phase 2D gate. Current conclusion: `not_ready_for_confident_localization`.
+Status: Phase 2E gate. Current conclusion: `not_ready_for_confident_localization`.
 
 This checklist defines what must be true before `where-to-edit` can return confident file or symbol candidates.
 
@@ -44,16 +44,23 @@ This checklist defines what must be true before `where-to-edit` can return confi
 - [x] Candidate limits prevent unbounded evidence bundle output.
   Evidence: eval case `source_evidence_broad_query_limit`; smoke test `source_evidence_broad_query_truncates_candidates`.
 
+- [x] SourceContext returns bounded read-only slices for explicit selectors.
+  Evidence: eval cases `source_context_file_slice` and `source_context_symbol_slice`; smoke tests `source_context_file_selector_returns_bounded_slice_with_evidence` and `source_context_symbol_id_selector_returns_symbol_slice`.
+
+- [x] SourceContext path safety is checked.
+  Evidence: eval cases `source_context_missing_file` and `source_context_ignored_path`; smoke tests for missing, ignored, outside, symlink, and non-UTF8 paths.
+
 - [ ] Candidate files and symbols are tied to queries by semantic/evaluated relevance evidence, not only string matching.
 - [ ] SymbolGraph-to-RepoGraph linking is defined and tested.
 - [ ] Reference/import/call graph decision is made.
 - [ ] LSP diagnostics bridge decision is made.
 - [ ] Negative localization fixtures prove no false confident candidate behavior.
-- [ ] Source context/snippet policy is defined.
+- [x] Source context/snippet policy is defined for explicit selectors.
+  Evidence: `docs/source-context-json-contract.md`.
 - [ ] False broad versus false narrow localization metrics exist.
 
 ## Conclusion
 
 `not_ready_for_confident_localization`
 
-Phase 2D verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, and refusal behavior. It still uses only deterministic string/token matching. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.
+Phase 2E verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, refusal behavior, and bounded read-only source slices. It still uses explicit selectors and deterministic string/token matching. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.

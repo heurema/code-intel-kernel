@@ -3,5 +3,6 @@ pub mod evidence;
 pub mod memory;
 pub mod process_reward;
 pub mod repo_graph;
+pub mod source_context;
 pub mod source_evidence;
 pub mod symbol_graph;

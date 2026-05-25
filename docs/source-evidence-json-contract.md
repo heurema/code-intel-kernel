@@ -4,6 +4,8 @@ Status: Phase 2D prototype contract, version `0.2`.
 
 `source-evidence` assembles evidence from RepoGraph and SymbolGraph-lite for a query. It is read-only and does not identify edit locations.
 
+Phase 2E adds `source-context` as a separate explicit-selector slicing layer. `source-evidence` output does not include snippets by default.
+
 ## Command
 
 ```bash
@@ -154,10 +156,11 @@ Missing evidence is first-class output. It should not be converted into guesses.
 ## Contract Versions
 
 - `source_evidence`: `0.2`
+- `source_context`: `0.1`
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`
 - `symbols`: unchanged, `0.1`
-- `eval`: `0.3`
+- `eval`: `0.4`
 
 ## Candidate Limits
 

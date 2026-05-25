@@ -1,0 +1,13 @@
+{
+  "name": "source_context_missing_file",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_context",
+  "selector_file": "src/missing.rs",
+  "expect": {
+    "status": "insufficient_evidence",
+    "warnings_contains_categories": [
+      "missing_file",
+      "source_context_not_localization"
+    ]
+  }
+}

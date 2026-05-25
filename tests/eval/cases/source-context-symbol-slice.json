@@ -1,0 +1,15 @@
+{
+  "name": "source_context_symbol_slice",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_context",
+  "selector_symbol_id": "symbol-src-lib-rs-function-top-level-function-0",
+  "expect": {
+    "status": "ok",
+    "slices_contains": ["src/lib.rs"],
+    "slice_symbols_contains": [
+      { "name": "top_level_function", "kind": "function", "path": "src/lib.rs" }
+    ],
+    "slice_text_contains": ["pub fn top_level_function"],
+    "warnings_contains_categories": ["source_context_not_localization"]
+  }
+}

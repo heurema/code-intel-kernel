@@ -1,0 +1,13 @@
+{
+  "name": "source_context_ignored_path",
+  "fixture": "tests/fixtures/rust-symbols-ignored",
+  "kind": "source_context",
+  "selector_file": "target/generated.rs",
+  "expect": {
+    "status": "insufficient_evidence",
+    "warnings_contains_categories": [
+      "ignored_path",
+      "source_context_not_localization"
+    ]
+  }
+}

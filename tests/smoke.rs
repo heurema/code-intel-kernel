@@ -1,13 +1,15 @@
 use code_intel_kernel::{
-    analyze_impact, build_source_evidence_bundle, build_symbol_graph, create_evidence_bundle,
-    evaluate_cases, inspect_repo, load_eval_cases, run_fixture_evaluation,
-    source_evidence_bundle_evidence_valid, symbol_graph_evidence_valid, BundleConfidence,
-    BundleStatus, BundleWarningCategory, DetectionCategory, DetectionSeverity, EvalCase,
-    EvalCaseKind, EvalExpect, EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport,
-    ImpactScope, ImpactStatus, KernelProfile, ParseStatus, RelationshipKind, RepoContextRole,
-    RepoInspection, SourceEvidenceBundle, SymbolGraph, SymbolKind, SymbolWarningCategory,
-    EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
-    SOURCE_EVIDENCE_CONTRACT_VERSION, SYMBOLS_CONTRACT_VERSION,
+    analyze_impact, build_source_context_report, build_source_evidence_bundle, build_symbol_graph,
+    create_evidence_bundle, evaluate_cases, inspect_repo, load_eval_cases, run_fixture_evaluation,
+    source_context_evidence_valid, source_evidence_bundle_evidence_valid,
+    symbol_graph_evidence_valid, BundleConfidence, BundleStatus, BundleWarningCategory,
+    DetectionCategory, DetectionSeverity, EvalCase, EvalCaseKind, EvalExpect, EvidenceRequest,
+    ImpactConfidence, ImpactKind, ImpactReport, ImpactScope, ImpactStatus, KernelProfile,
+    LineRange, ParseStatus, RelationshipKind, RepoContextRole, RepoInspection, SourceContextReport,
+    SourceContextSelector, SourceContextStatus, SourceContextWarningCategory, SourceEvidenceBundle,
+    SymbolGraph, SymbolKind, SymbolWarningCategory, EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION,
+    INSPECT_CONTRACT_VERSION, SOURCE_CONTEXT_CONTRACT_VERSION, SOURCE_EVIDENCE_CONTRACT_VERSION,
+    SYMBOLS_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
 use std::process::Command;
@@ -1031,10 +1033,262 @@ fn source_evidence_cli_output_is_valid_json() {
 }
 
 #[test]
+fn source_context_file_selector_returns_bounded_slice_with_evidence() {
+    let report = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::File {
+            path: "src/lib.rs".to_string(),
+            line_range: Some(LineRange {
+                start_line: 1,
+                end_line: 6,
+            }),
+        }],
+    );
+
+    assert_eq!(report.contract_version, SOURCE_CONTEXT_CONTRACT_VERSION);
+    assert_eq!(report.status, SourceContextStatus::Ok);
+    assert_eq!(report.slices.len(), 1);
+    let slice = &report.slices[0];
+    assert_eq!(slice.file_path, "src/lib.rs");
+    assert_eq!(slice.start_line, 1);
+    assert_eq!(slice.end_line, 6);
+    assert!(slice.text.contains("pub fn top_level_function"));
+    assert!(!slice.text.contains("nested_helper"));
+    assert!(!slice.evidence_ids.is_empty());
+    assert!(source_context_evidence_valid(&report));
+}
+
+#[test]
+fn source_context_symbol_id_selector_returns_symbol_slice() {
+    let graph = build_symbol_graph("tests/fixtures/rust-symbols-basic");
+    let symbol = graph
+        .symbols
+        .iter()
+        .find(|symbol| symbol.name == "top_level_function")
+        .expect("fixture should contain top_level_function");
+    let report = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::SymbolId {
+            symbol_id: symbol.id.clone(),
+        }],
+    );
+
+    assert_eq!(report.status, SourceContextStatus::Ok);
+    assert!(report.slices.iter().any(|slice| {
+        slice.symbol_id.as_deref() == Some(symbol.id.as_str())
+            && slice.symbol_name.as_deref() == Some("top_level_function")
+            && slice.context_after_lines <= 3
+            && slice.text.contains("pub fn top_level_function")
+    }));
+    assert!(source_context_evidence_valid(&report));
+}
+
+#[test]
+fn source_context_missing_ignored_and_outside_paths_warn_without_slices() {
+    let missing = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::File {
+            path: "src/missing.rs".to_string(),
+            line_range: None,
+        }],
+    );
+    assert_eq!(missing.status, SourceContextStatus::InsufficientEvidence);
+    assert!(missing
+        .warnings
+        .iter()
+        .any(|warning| warning.category == SourceContextWarningCategory::MissingFile));
+
+    let ignored = build_source_context_report(
+        "tests/fixtures/rust-symbols-ignored",
+        vec![SourceContextSelector::File {
+            path: "target/generated.rs".to_string(),
+            line_range: None,
+        }],
+    );
+    assert_eq!(ignored.status, SourceContextStatus::InsufficientEvidence);
+    assert!(ignored
+        .warnings
+        .iter()
+        .any(|warning| warning.category == SourceContextWarningCategory::IgnoredPath));
+
+    let outside = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::File {
+            path: "../Cargo.toml".to_string(),
+            line_range: None,
+        }],
+    );
+    assert_eq!(outside.status, SourceContextStatus::InsufficientEvidence);
+    assert!(outside
+        .warnings
+        .iter()
+        .any(|warning| warning.category == SourceContextWarningCategory::PathOutsideRepo));
+}
+
+#[test]
+fn source_context_large_and_non_utf8_files_warn_without_panic() {
+    let root = std::env::temp_dir().join(format!(
+        "code-intel-kernel-source-context-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("src")).expect("source directory should be created");
+    let large_text = (0..120)
+        .map(|index| format!("pub fn function_{index}() {{}}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    std::fs::write(root.join("src").join("large.rs"), large_text)
+        .expect("large source should be written");
+    std::fs::write(root.join("src").join("bad.rs"), vec![0xff, 0xfe, 0xfd])
+        .expect("non-UTF8 source should be written");
+
+    let large = build_source_context_report(
+        &root,
+        vec![SourceContextSelector::File {
+            path: "src/large.rs".to_string(),
+            line_range: Some(LineRange {
+                start_line: 1,
+                end_line: 120,
+            }),
+        }],
+    );
+    assert_eq!(large.slices.len(), 1);
+    assert!(large.slices[0].truncated);
+    assert!(large.slices[0].end_line - large.slices[0].start_line < 80);
+    assert!(large
+        .warnings
+        .iter()
+        .any(|warning| warning.category == SourceContextWarningCategory::SliceTruncated));
+
+    let non_utf8 = build_source_context_report(
+        &root,
+        vec![SourceContextSelector::File {
+            path: "src/bad.rs".to_string(),
+            line_range: None,
+        }],
+    );
+    let _ = std::fs::remove_dir_all(&root);
+    assert_eq!(non_utf8.status, SourceContextStatus::InsufficientEvidence);
+    assert!(non_utf8
+        .warnings
+        .iter()
+        .any(|warning| warning.category == SourceContextWarningCategory::NonUtf8File));
+}
+
+#[cfg(unix)]
+#[test]
+fn source_context_symlink_selector_is_blocked() {
+    let root = std::env::temp_dir().join(format!(
+        "code-intel-kernel-source-context-symlink-{}",
+        std::process::id()
+    ));
+    let outside = std::env::temp_dir().join(format!(
+        "code-intel-kernel-source-context-outside-{}.rs",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    let _ = std::fs::remove_file(&outside);
+    std::fs::create_dir_all(root.join("src")).expect("source directory should be created");
+    std::fs::write(&outside, "pub fn outside() {}\n").expect("outside file should be written");
+    std::os::unix::fs::symlink(&outside, root.join("src").join("link.rs"))
+        .expect("symlink should be created");
+
+    let report = build_source_context_report(
+        &root,
+        vec![SourceContextSelector::File {
+            path: "src/link.rs".to_string(),
+            line_range: None,
+        }],
+    );
+    let _ = std::fs::remove_dir_all(&root);
+    let _ = std::fs::remove_file(&outside);
+
+    assert_eq!(report.status, SourceContextStatus::InsufficientEvidence);
+    assert!(report
+        .warnings
+        .iter()
+        .any(|warning| warning.category == SourceContextWarningCategory::SymlinkIgnored));
+}
+
+#[test]
+fn source_context_output_is_deterministic_and_has_no_edit_target_language() {
+    let first = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::File {
+            path: "src/lib.rs".to_string(),
+            line_range: Some(LineRange {
+                start_line: 1,
+                end_line: 12,
+            }),
+        }],
+    );
+    let second = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::File {
+            path: "src/lib.rs".to_string(),
+            line_range: Some(LineRange {
+                start_line: 1,
+                end_line: 12,
+            }),
+        }],
+    );
+    assert_eq!(first, second);
+    assert!(source_context_evidence_valid(&first));
+
+    let json = serde_json::to_string(&first).expect("source context should serialize");
+    for forbidden in [
+        "edit this",
+        "edit here",
+        "target_edit",
+        "edit_location",
+        "apply patch",
+        "change this",
+        "correct edit location",
+    ] {
+        assert!(
+            !json.contains(forbidden),
+            "source-context output should not contain edit-target phrase: {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn source_context_cli_output_is_valid_json() {
+    let binary = env!("CARGO_BIN_EXE_code-intel");
+    let output = Command::new(binary)
+        .args([
+            "source-context",
+            "--file",
+            "src/lib.rs",
+            "--lines",
+            "1:8",
+            "--repo",
+            "tests/fixtures/rust-symbols-basic",
+            "--json",
+        ])
+        .output()
+        .expect("source-context command should run");
+
+    assert!(
+        output.status.success(),
+        "source-context command failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let report: SourceContextReport =
+        serde_json::from_slice(&output.stdout).expect("source-context output should be JSON");
+    assert_eq!(report.contract_version, SOURCE_CONTEXT_CONTRACT_VERSION);
+    assert!(report
+        .slices
+        .iter()
+        .any(|slice| slice.file_path == "src/lib.rs"));
+}
+
+#[test]
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
-    assert!(cases.len() >= 25);
+    assert!(cases.len() >= 29);
     assert!(cases
         .iter()
         .any(|case| case.name == "cargo_workspace_dependency_impact"));
@@ -1047,6 +1301,9 @@ fn evaluator_loads_fixture_cases() {
     assert!(cases
         .iter()
         .any(|case| case.kind == EvalCaseKind::SourceEvidence));
+    assert!(cases
+        .iter()
+        .any(|case| case.kind == EvalCaseKind::SourceContext));
 }
 
 #[test]
@@ -1056,16 +1313,18 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
 
     assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
     assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
-    assert!(report.total_cases >= 25);
+    assert!(report.total_cases >= 29);
     assert!(report.inspect_cases > 0);
     assert!(report.impact_cases > 0);
     assert!(report.symbol_cases > 0);
     assert!(report.source_evidence_cases > 0);
+    assert!(report.source_context_cases > 0);
     assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
     assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
     assert!(json.get("metrics").is_some());
     assert!(json.get("symbol_cases").is_some());
     assert!(json.get("source_evidence_cases").is_some());
+    assert!(json.get("source_context_cases").is_some());
 }
 
 #[test]
@@ -1088,6 +1347,9 @@ fn eval_fixtures_cli_output_is_valid_json() {
     assert_eq!(json["failed_cases"], 0);
     assert!(json["symbol_cases"].as_u64().is_some_and(|count| count > 0));
     assert!(json["source_evidence_cases"]
+        .as_u64()
+        .is_some_and(|count| count > 0));
+    assert!(json["source_context_cases"]
         .as_u64()
         .is_some_and(|count| count > 0));
     assert!(json.get("metrics").is_some());
@@ -1156,12 +1418,35 @@ fn source_evidence_eval_cases_pass() {
 }
 
 #[test]
+fn source_context_eval_cases_pass() {
+    let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
+
+    for case_name in [
+        "source_context_file_slice",
+        "source_context_symbol_slice",
+        "source_context_missing_file",
+        "source_context_ignored_path",
+    ] {
+        let result = report
+            .cases
+            .iter()
+            .find(|case| case.name == case_name)
+            .expect("source context eval case should be present");
+        assert!(result.passed, "{case_name} failed: {:?}", result.failures);
+        assert_eq!(result.kind, EvalCaseKind::SourceContext);
+    }
+}
+
+#[test]
 fn evaluator_reports_deliberate_false_narrow() {
     let report = evaluate_cases(vec![EvalCase {
         name: "deliberate_false_narrow".to_string(),
         fixture: "tests/fixtures/minimal-cargo".to_string(),
         kind: EvalCaseKind::Inspect,
         query: String::new(),
+        selector_file: String::new(),
+        selector_symbol_id: String::new(),
+        selector_lines: None,
         changed_files: Vec::new(),
         expect: EvalExpect {
             components_contains: vec!["missing-component".to_string()],
@@ -1185,6 +1470,9 @@ fn evaluator_reports_deliberate_false_broad() {
         fixture: "tests/fixtures/minimal-cargo".to_string(),
         kind: EvalCaseKind::Impact,
         query: String::new(),
+        selector_file: String::new(),
+        selector_symbol_id: String::new(),
+        selector_lines: None,
         changed_files: vec!["Cargo.toml".to_string()],
         expect: EvalExpect {
             max_impacted_components: Some(0),
