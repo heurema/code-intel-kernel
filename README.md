@@ -1,123 +1,64 @@
-# Code Intelligence Kernel Bootstrap Kit
+# Code Intelligence Kernel
 
-Date: 2026-05-24
+`code-intel-kernel` is a local-first Rust CLI/library for evidence-backed codebase understanding.
 
-This archive is a documentation-first bootstrap package for a reusable **Code Intelligence Kernel** that can be used by Goalrail, Punk, and other consumers.
+It is meant to be a small reusable kernel that exposes structured facts about a repository. Downstream tools can use those facts for navigation, validation, review, and future agent workflows without depending only on grep, chat history, or embeddings.
 
-The project is intentionally framed as a reusable module, not a one-off LSP integration and not an embeddings-first code RAG system.
+It is not an IDE, agent, MCP server, vector database, or edit planner.
 
-## Recommended directory name
+## Core Ideas
 
-Use:
+- **RepoGraph:** repository/build/test structure, components, commands, workspaces, and manifest-backed relationships.
+- **SymbolGraph-lite:** source-level facts with deterministic IDs and evidence.
+- **SourceEvidence:** evidence assembly for queries, not edit localization.
+- **SourceContext:** bounded read-only source slices from explicit selectors.
+- **Evaluation:** fixture-based checks for evidence coverage, deterministic output, and refusal behavior.
+- **Refusal:** missing evidence is a first-class result, not a reason to guess.
+
+## Usage
 
 ```bash
-code-intel-kernel
+cargo run --quiet -- inspect . --json
+cargo run --quiet -- impact src/main.rs Cargo.toml --json
+cargo run --quiet -- eval-fixtures --json
+cargo run --quiet -- symbols . --json
+cargo run --quiet -- source-evidence "parse repo graph" --json
+cargo run --quiet -- source-context --file src/lib.rs --json
+cargo run --quiet -- where-to-edit "change login validation copy" --profile=strict --json
 ```
 
-Rationale: this name is neutral enough to serve multiple consumers while still clearly describing the module. If it later becomes a package, candidates are:
+## Contracts and Docs
 
-```text
-code-intel-kernel
-@code-intel/kernel
+JSON contracts and phase notes live under `docs/` and `notes/`.
+
+The README intentionally avoids tracking every contract version and phase checkpoint. Use the contract docs as the source of truth when implementing against the CLI output.
+
+Important docs:
+
+- `docs/inspect-json-contract.md`
+- `docs/impact-json-contract.md`
+- `docs/symbolgraph-json-contract.md`
+- `docs/source-evidence-json-contract.md`
+- `docs/source-context-json-contract.md`
+- `docs/evaluation-harness.md`
+- `docs/repo-vs-symbol-graph-boundary.md`
+
+## Boundaries
+
+- Read-only first.
+- Local-first.
+- Evidence-backed facts over guesses.
+- No mutation tools.
+- No embeddings-first retrieval.
+- No confident edit localization until a dedicated readiness gate proves it is safe.
+- Draft designs do not imply runtime implementation.
+
+## Development
+
+```bash
+cargo fmt --check
+cargo test
+cargo clippy -- -D warnings
 ```
 
-For now, use `code-intel-kernel`.
-
-## What this package contains
-
-```text
-README.md
-PROMPT_FOR_CODEX.md
-docs/
-  00-product-brief.md
-  01-architecture.md
-  02-rd-research-map.md
-  03-mvp-roadmap.md
-  04-data-model.md
-  05-agent-tools.md
-  06-goalrail-integration.md
-  07-punk-integration.md
-  08-metrics-and-benchmarks.md
-  09-risks-and-guardrails.md
-  10-open-questions.md
-  consumers/
-    goalrail-profile.md
-    punk-profile.md
-    example-custom-integration.md
-specs/
-  domain-model.types.ts
-  sqlite-schema.sql
-  cli-contract.md
-  mcp-tools-contract.md
-  evidence-bundle.md
-  process-reward.md
-prompts/
-  01-codex-unpack-and-initialize.md
-  02-codex-architecture-review.md
-  03-codex-mvp-implementation-plan.md
-research/
-  references.md
-  extraction-notes.md
-  papers-to-read.md
-examples/
-  example-agent-event.json
-  example-evidence-bundle.json
-  example-process-reward.json
-  example-repo-map.json
-templates/
-  ADR-template.md
-  CLAUDE.md.template
-  PRD-template.md
-config/
-  manifest.json
-  recommended-directory-name.txt
-```
-
-## Strategic decision
-
-**Decision:** Build a reusable Code Intelligence Kernel with project-agnostic core contracts.
-
-**Reason:** Multiple consumers need structured repo understanding, evidence-backed context, process reward, and reusable agent tools.
-
-**Avoid:** project-specific LSP hacks, embeddings-first overbuild, unsafe MCP/tool sprawl, and natural-language-only memory.
-
-## Immediate objective
-
-The current implementation is a **read-only, structural-first kernel** with a stable RepoGraph layer and a narrow SymbolGraph-lite layer:
-
-1. `inspect`: evidence-backed repository/build/test facts.
-2. `impact`: conservative RepoGraph-only impact from changed files.
-3. `eval-fixtures`: fixture-based quality gate for inspect, impact, symbols, source-evidence, and source-context.
-4. `symbols`: evidence-backed Rust top-level source facts.
-5. `source-evidence`: read-only evidence assembly and SourceContext selector hints from RepoGraph and SymbolGraph-lite.
-6. `source-context`: explicit-selector, read-only bounded source snippets.
-7. `where-to-edit`: still returns `insufficient_evidence` until evaluated localization evidence exists.
-
-The current SymbolGraph-lite scope is intentionally narrow:
-
-- Rust/top-level source facts first.
-- Evidence-backed deterministic IDs.
-- No call graph initially.
-- No LSP runtime initially.
-- No SQLite initially.
-- No MCP initially.
-- No embeddings.
-- No confident edit localization until evaluated.
-
-## Non-goals for the first milestone
-
-Do **not** build these first:
-
-- Full enterprise code search.
-- Full MCP server with mutation tools.
-- Embeddings-first code RAG.
-- Neo4j or heavy graph infrastructure.
-- Full Joern/CPG security analyzer.
-- Automatic refactor tools.
-- UI/dashboard.
-
-The current runtime milestone is CLI/library only: RepoGraph inspect, impact, eval, SymbolGraph-lite symbols, SourceEvidenceBundle evidence assembly with selector hints, and explicit SourceContext slices. LSP is design-only in Phase 3A. SQLite and MCP remain deferred until core CLI/API behavior is stable.
-
-## First Codex instruction
-
-Use `PROMPT_FOR_CODEX.md` or `prompts/01-codex-unpack-and-initialize.md`.
+The project is intentionally small and read-only first. Prefer explicit evidence and structured warnings over guesses.
