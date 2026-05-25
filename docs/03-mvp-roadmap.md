@@ -1,6 +1,6 @@
 # 03 — MVP Roadmap
 
-Status: historical bootstrap roadmap, updated through Phase 2E.
+Status: historical bootstrap roadmap, updated through Phase 2G.
 
 Current implementation source of truth:
 
@@ -32,7 +32,9 @@ Phase 2C: SourceEvidenceBundle prototype
 Phase 2D: Source-to-repo evidence linking
 Phase 2E: Read-only SourceContext slices
 Phase 2F: SourceContext selector hints
-Phase 3: LSP diagnostics bridge
+Phase 2G: Localization adversarial readiness gate
+Phase 3A: LSP diagnostics/reference bridge design
+Phase 3B: LSP diagnostics/reference bridge implementation candidate
 Phase 4: EvidenceBundle and ProcessReward
 Phase 5: SessionMemory
 Phase 6: Read-only MCP surface
@@ -168,7 +170,7 @@ Measure SymbolGraph-lite facts through eval cases and document the SourceEvidenc
 
 - `eval-fixtures` includes `symbols` cases.
 - Source files and symbols remain evidence-backed and deterministic.
-- SourceEvidenceBundle is documented but not wired to `where-to-edit`.
+- SourceEvidenceBundle contract is documented but not wired to `where-to-edit`.
 - Localization remains `not_ready_for_confident_localization`.
 - `where-to-edit` remains `insufficient_evidence`.
 
@@ -184,22 +186,6 @@ Assemble query, RepoGraph context, SymbolGraph-lite facts, evidence, limitations
 - `source_evidence` contract version is `0.3` after Phase 2F selector hints.
 - Eval includes source-evidence cases.
 - Candidate files and symbols are evidence-backed.
-- No output claims edit locations.
-- `where-to-edit` remains `insufficient_evidence`.
-
-## Phase 2F — SourceContext selector hints
-
-### Goal
-
-Add explicit SourceContext selector hints to SourceEvidenceBundle.
-
-### Acceptance criteria
-
-- SourceEvidence emits `source_context_selectors`.
-- Hints are generated only from evidence-backed candidate files and symbols.
-- Hints are capped and deterministic.
-- Hints can be used manually with `source-context`.
-- SourceEvidence does not include snippets by default.
 - No output claims edit locations.
 - `where-to-edit` remains `insufficient_evidence`.
 
@@ -220,17 +206,62 @@ Return bounded read-only source snippets for explicit file or SymbolGraph-lite s
 - No output claims edit locations.
 - `where-to-edit` remains `insufficient_evidence`.
 
-## Phase 3 — LSP diagnostics bridge
+## Phase 2F — SourceContext selector hints
 
 ### Goal
 
-Collect diagnostics and precise symbol facts from language servers.
+Add explicit SourceContext selector hints to SourceEvidenceBundle.
+
+### Acceptance criteria
+
+- SourceEvidence emits `source_context_selectors`.
+- Hints are generated only from evidence-backed candidate files and symbols.
+- Hints are capped and deterministic.
+- Hints can be used manually with `source-context`.
+- SourceEvidence does not include snippets by default.
+- No output claims edit locations.
+- `where-to-edit` remains `insufficient_evidence`.
+
+## Phase 2G — Localization adversarial readiness gate
+
+### Goal
+
+Stress-test current evidence layers against ambiguity and refusal cases before opening LSP work.
+
+### Acceptance criteria
+
+- Duplicate source symbol names are tested.
+- Broad/reference-style queries expose missing evidence instead of edit targets.
+- Unsupported-language and ignored/generated paths do not become source evidence.
+- SourceContext path traversal and malformed-source cases are covered.
+- Runtime outputs avoid edit-target language.
+- `where-to-edit` remains `insufficient_evidence`.
+- Conclusion remains `not_ready_for_confident_localization`.
+
+## Phase 3A — LSP diagnostics/reference bridge design
+
+### Goal
+
+Design a read-only diagnostics/reference bridge without implementing a language-server integration yet.
 
 ### Scope
 
-Start with TypeScript project diagnostics via a minimal `tsserver` or language-server adapter. Add Python/Pyright later.
+Choose whether the first bridge should be Rust-oriented, TypeScript-oriented, or protocol-oriented. Define evidence-backed diagnostics/reference contracts, refusal behavior, and how this layer stays separate from RepoGraph, SymbolGraph-lite, SourceEvidence, SourceContext, and `where-to-edit`.
 
-### CLI
+### Acceptance criteria
+
+- No LSP implementation yet.
+- No SQLite, MCP, embeddings, mutation tools, or confident `where-to-edit`.
+- Diagnostics/reference facts have a proposed evidence model.
+- Duplicate-symbol and missing-reference risks from Phase 2G are explicitly addressed.
+
+## Phase 3B — LSP diagnostics/reference bridge implementation candidate
+
+### Goal
+
+Implement one minimal read-only diagnostics/reference bridge only after Phase 3A design is accepted.
+
+### Possible CLI
 
 ```bash
 code-intel diagnostics .
@@ -242,6 +273,7 @@ code-intel diagnostic-delta --before run1 --after run2
 - Captures diagnostics snapshot.
 - Computes before/after deltas.
 - Does not mutate code.
+- Keeps deltas in memory until storage is justified.
 
 ## Phase 4 — EvidenceBundle and ProcessReward
 
@@ -344,6 +376,6 @@ Document how Punk can use the same kernel in faster prototype mode without forki
 ### Sequence
 
 - Finish Phase 1G readiness and boundary documentation.
-- Start Phase 2A only as SymbolGraph-lite.
-- Keep LSP, SQLite, MCP, embeddings, and confident edit localization deferred.
-- Add source-level eval cases before exposing source-level recommendations to consumers.
+- Complete Phase 2G adversarial readiness gate.
+- Start Phase 3A as LSP diagnostics/reference bridge design only.
+- Keep LSP implementation, SQLite, MCP, embeddings, and confident edit localization deferred until the design is accepted.

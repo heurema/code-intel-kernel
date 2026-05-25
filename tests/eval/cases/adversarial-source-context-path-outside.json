@@ -1,0 +1,24 @@
+{
+  "name": "adversarial_source_context_path_outside",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_context",
+  "selector_file": "../Cargo.toml",
+  "expect": {
+    "status": "insufficient_evidence",
+    "warnings_contains_categories": [
+      "path_outside_repo",
+      "source_context_not_localization"
+    ],
+    "output_not_contains": [
+      "edit this",
+      "edit here",
+      "edit_location",
+      "target_edit",
+      "patch target",
+      "apply patch",
+      "root cause",
+      "change this",
+      "correct edit location"
+    ]
+  }
+}

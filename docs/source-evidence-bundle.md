@@ -1,10 +1,10 @@
 # SourceEvidenceBundle Contract
 
-Status: Phase 2F prototype contract. Active as read-only evidence assembly, not localization.
+Status: Phase 2G validated prototype contract. Active as read-only evidence assembly, not localization.
 
 A SourceEvidenceBundle is a source-level evidence packet for future review, localization, and impact reasoning. It combines candidate source files, candidate symbols, source evidence, and relevant RepoGraph context while remaining honest about missing evidence.
 
-Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. Phase 2E adds SourceContext as a separate explicit-selector snippet layer. Phase 2F adds SourceContext selector hints. SourceEvidenceBundle does not include snippets by default and does not connect to `where-to-edit`.
+Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. Phase 2E adds SourceContext as a separate explicit-selector snippet layer. Phase 2F adds SourceContext selector hints. Phase 2G adds adversarial refusal eval cases. SourceEvidenceBundle does not include snippets by default and does not connect to `where-to-edit`.
 
 ## Shape
 
@@ -108,7 +108,7 @@ Every candidate file and symbol must reference existing evidence IDs.
 - `partial`: some useful source evidence exists, but important evidence is missing.
 - `insufficient_evidence`: the bundle cannot support the requested use without guessing.
 
-For edit localization, Phase 2D still expects `insufficient_evidence`.
+For edit localization, Phase 2G still expects `insufficient_evidence`.
 
 ## Missing Evidence
 
@@ -119,7 +119,7 @@ Use `missing_evidence` for facts that would be required before localization:
 - call graph;
 - LSP diagnostics;
 - explicit source-context selector policy around candidates;
-- evaluated negative localization cases;
+- adversarial localization refusal cases;
 - RepoGraph-to-SymbolGraph linking if needed.
 
 ## Refusal Behavior
@@ -136,7 +136,7 @@ Example:
   "missing_evidence": [
     "No reference graph",
     "No query-to-symbol relevance model",
-    "No evaluated localization cases"
+    "No reference/call graph layer"
   ],
   "refusal_reason": "Top-level symbols alone are not enough for reliable edit localization."
 }

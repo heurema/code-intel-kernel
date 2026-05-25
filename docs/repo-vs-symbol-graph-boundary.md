@@ -42,7 +42,7 @@ Phase 2A implements only SymbolGraph-lite:
 
 It still does not own calls, references, imports/exports, LSP diagnostics, or edit localization.
 
-Phase 2B adds evaluation coverage for SymbolGraph-lite. Phase 2C adds SourceEvidenceBundle as read-only evidence assembly. Phase 2D hardens source-to-repo context roles and refusal behavior. Phase 2E adds SourceContext as explicit-selector, read-only source slices. Phase 2F adds selector hints from SourceEvidence to SourceContext. None of these move edit localization into SymbolGraph.
+Phase 2B adds evaluation coverage for SymbolGraph-lite. Phase 2C adds SourceEvidenceBundle as read-only evidence assembly. Phase 2D hardens source-to-repo context roles and refusal behavior. Phase 2E adds SourceContext as explicit-selector, read-only source slices. Phase 2F adds selector hints from SourceEvidence to SourceContext. Phase 2G adds adversarial refusal cases for duplicate symbols, broad/reference-style queries, unsupported language input, and path safety. None of these move edit localization into SymbolGraph.
 
 ## Explicit Non-Goals
 
@@ -67,7 +67,7 @@ SourceContext owns bounded source snippets for explicit file or symbol selectors
 
 RepoGraph should be computed first. SymbolGraph can attach source facts to RepoGraph components when evidence supports it.
 
-`where-to-edit` should remain `insufficient_evidence` until SymbolGraph produces evaluated localization evidence.
+`where-to-edit` should remain `insufficient_evidence` until a separate localization layer has evaluated reference, call graph, diagnostics, ambiguity, and negative-case evidence.
 
 Impact should remain explicit about the layer used:
 

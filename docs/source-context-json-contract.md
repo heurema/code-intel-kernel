@@ -1,10 +1,10 @@
 # Source Context JSON Contract
 
-Status: Phase 2E prototype contract, version `0.1`.
+Status: Phase 2G validated prototype contract, version `0.1`.
 
 `source-context` returns bounded, read-only source snippets for explicit selectors. It is not natural-language localization and does not identify edit targets.
 
-Phase 2F allows `source-evidence` to emit selector hints that can be passed manually to `source-context`. `source-context` itself remains explicit-selector only.
+Phase 2F allows `source-evidence` to emit selector hints that can be passed manually to `source-context`. Phase 2G adds adversarial path-safety and malformed-source eval cases without changing the JSON shape. `source-context` itself remains explicit-selector only.
 
 ## Commands
 

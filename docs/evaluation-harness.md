@@ -1,6 +1,6 @@
 # Evaluation Harness
 
-Status: Phase 2E fixture evaluation contract.
+Status: Phase 2G fixture evaluation contract.
 
 The evaluation harness measures current `inspect`, `impact`, `symbols`, `source-evidence`, and `source-context` behavior across small fixtures.
 
@@ -74,7 +74,7 @@ Known `kind` values:
 - `source_evidence`
 - `source_context`
 
-Expectations are semantic checks, not full-output snapshots. A case can assert required facts, forbidden facts, expected warning categories, unexpected warning categories, impact status, confidence, scope, and maximum impacted component count.
+Expectations are semantic checks, not full-output snapshots. A case can assert required facts, forbidden facts, expected warning categories, unexpected warning categories, impact status, confidence, scope, maximum counts, and forbidden runtime-output phrases.
 
 Symbol cases use the same file format:
 
@@ -116,7 +116,11 @@ Source-evidence cases can assert candidate files, candidate symbols, selector hi
     ],
     "selector_hints_contains": ["src/lib.rs"],
     "warnings_contains_categories": ["localization_not_supported"],
-    "missing_evidence_contains": ["no_symbol_reference_layer"]
+    "missing_evidence_contains": ["no_symbol_reference_layer"],
+    "max_candidate_files": 2,
+    "max_candidate_symbols": 2,
+    "max_source_context_selectors": 4,
+    "output_not_contains": ["edit_location", "target_edit", "apply patch"]
   }
 }
 ```
@@ -135,10 +139,13 @@ Source-context cases use explicit selectors and can assert slices, symbol slices
     "slices_contains": ["src/lib.rs"],
     "slice_text_contains": ["pub fn top_level_function"],
     "warnings_contains_categories": ["source_context_not_localization"],
-    "max_slice_lines": 8
+    "max_slice_lines": 8,
+    "output_not_contains": ["edit_location", "target_edit", "apply patch"]
   }
 }
 ```
+
+Phase 2G uses `output_not_contains` only against runtime JSON outputs. Documentation can still discuss edit-localization boundaries directly.
 
 ## Metrics
 
@@ -186,6 +193,12 @@ The initial case set covers:
 - SourceEvidenceBundle broad-query candidate limit and malformed-source refusal.
 - SourceEvidenceBundle selector hints for exact file/symbol matches.
 - SourceContext file slice, symbol slice, missing file, and ignored path refusal.
+- Adversarial duplicate-symbol ambiguity.
+- Adversarial reference/call-graph-style query refusal.
+- Unsupported-language source refusal.
+- Component/query match without source-symbol evidence.
+- SourceContext path traversal refusal.
+- Explicit malformed-source text slicing without localization claims.
 
 ## Negative Case Rationale
 
@@ -198,6 +211,7 @@ The initial case set covers:
 - It does not execute recommended commands.
 - It does not validate source-level localization.
 - SourceContext eval validates explicit read-only slicing only.
+- Phase 2G adversarial cases validate refusal behavior, not localization correctness.
 - It does not score performance yet.
 - It does not persist historical trend data.
 
@@ -214,4 +228,4 @@ Before `where-to-edit` can stop refusing, the project should have:
 - structured warnings that match expectations;
 - `where-to-edit` still returning `insufficient_evidence`.
 
-Passing Phase 2B eval does not make the kernel ready for confident localization. Top-level symbols are source facts, not edit candidates.
+Passing Phase 2G eval does not make the kernel ready for confident localization. Top-level symbols are source facts, selector hints are context handles, and source slices are read-only context, not edit candidates.

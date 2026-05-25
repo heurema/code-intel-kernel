@@ -1,0 +1,35 @@
+{
+  "name": "adversarial_reference_query_source_evidence",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "source_evidence",
+  "query": "who calls top_level_function",
+  "expect": {
+    "status": "partial",
+    "confidence": "low",
+    "candidate_symbols_contains": [
+      { "name": "top_level_function", "kind": "function", "path": "src/lib.rs" }
+    ],
+    "selector_hints_contains": ["src/lib.rs"],
+    "warnings_contains_categories": [
+      "multiple_candidates",
+      "localization_not_supported"
+    ],
+    "missing_evidence_contains": [
+      "no_symbol_reference_layer",
+      "no_call_graph",
+      "localization_not_supported"
+    ],
+    "max_source_context_selectors": 2,
+    "output_not_contains": [
+      "edit this",
+      "edit here",
+      "edit_location",
+      "target_edit",
+      "patch target",
+      "apply patch",
+      "root cause",
+      "change this",
+      "correct edit location"
+    ]
+  }
+}

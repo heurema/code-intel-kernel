@@ -1,0 +1,19 @@
+{
+  "name": "adversarial_unsupported_language_source_evidence",
+  "fixture": "tests/fixtures/unsupported-language",
+  "kind": "source_evidence",
+  "query": "render",
+  "expect": {
+    "status": "insufficient_evidence",
+    "confidence": "insufficient",
+    "warnings_contains_categories": [
+      "no_matching_source_files",
+      "no_matching_source_symbols",
+      "localization_not_supported"
+    ],
+    "missing_evidence_contains": ["no_source_match"],
+    "max_candidate_files": 0,
+    "max_candidate_symbols": 0,
+    "max_source_context_selectors": 0
+  }
+}

@@ -84,6 +84,8 @@ pub struct EvalExpect {
     pub candidate_files_contains: Vec<String>,
     #[serde(default)]
     pub candidate_symbols_contains: Vec<ExpectedSymbol>,
+    pub max_candidate_files: Option<usize>,
+    pub max_candidate_symbols: Option<usize>,
     #[serde(default)]
     pub repo_context_contains: Vec<String>,
     #[serde(default)]
@@ -103,6 +105,8 @@ pub struct EvalExpect {
     pub slice_text_contains: Vec<String>,
     #[serde(default)]
     pub slice_text_not_contains: Vec<String>,
+    #[serde(default)]
+    pub output_not_contains: Vec<String>,
     pub max_slice_lines: Option<usize>,
     pub max_impacted_components: Option<usize>,
 }
@@ -383,29 +387,22 @@ fn check_source_context_expectations(
     check_warning_expectations(case, &warning_categories, counters, failures);
 
     if let Some(max_lines) = case.expect.max_slice_lines {
-        let passed = report
+        let actual_max = report
             .slices
             .iter()
-            .all(|slice| source_context_slice_line_count(slice) <= max_lines);
-        counters.expected_checks += 1;
-        if passed {
-            counters.expected_checks_passed += 1;
-        } else {
-            counters.false_broad_count += 1;
-            failures.push(failure(
-                case,
-                "max_slice_lines",
-                format!("at most {max_lines}"),
-                report
-                    .slices
-                    .iter()
-                    .map(|slice| source_context_slice_line_count(slice).to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                "false_broad",
-            ));
-        }
+            .map(source_context_slice_line_count)
+            .max()
+            .unwrap_or(0);
+        check_count_at_most(
+            case,
+            "max_slice_lines",
+            actual_max,
+            max_lines,
+            counters,
+            failures,
+        );
     }
+    check_runtime_output_forbidden(case, report, counters, failures);
 }
 
 fn source_context_slice_line_count(slice: &SourceContextSlice) -> usize {
@@ -413,6 +410,70 @@ fn source_context_slice_line_count(slice: &SourceContextSlice) -> usize {
         .end_line
         .saturating_sub(slice.start_line)
         .saturating_add(1)
+}
+
+fn check_count_at_most(
+    case: &EvalCase,
+    field: &str,
+    actual: usize,
+    max: usize,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    let passed = actual <= max;
+    counters.expected_checks += 1;
+    if passed {
+        counters.expected_checks_passed += 1;
+    } else {
+        counters.false_broad_count += 1;
+        failures.push(failure(
+            case,
+            field,
+            format!("at most {max}"),
+            actual.to_string(),
+            "false_broad",
+        ));
+    }
+}
+
+fn check_runtime_output_forbidden<T: Serialize>(
+    case: &EvalCase,
+    output: &T,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    if case.expect.output_not_contains.is_empty() {
+        return;
+    }
+
+    let Ok(serialized) = serde_json::to_string(output) else {
+        failures.push(failure(
+            case,
+            "output_not_contains",
+            "serializable output".to_string(),
+            "serialization failed".to_string(),
+            "mismatch",
+        ));
+        return;
+    };
+    let normalized = serialized.to_ascii_lowercase();
+
+    for forbidden in &case.expect.output_not_contains {
+        let passed = !normalized.contains(&forbidden.to_ascii_lowercase());
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_broad_count += 1;
+            failures.push(failure(
+                case,
+                "output_not_contains",
+                format!("not {forbidden}"),
+                forbidden.clone(),
+                "false_broad",
+            ));
+        }
+    }
 }
 
 fn check_source_evidence_expectations(
@@ -484,6 +545,26 @@ fn check_source_evidence_expectations(
         counters,
         failures,
     );
+    if let Some(max) = case.expect.max_candidate_files {
+        check_count_at_most(
+            case,
+            "max_candidate_files",
+            bundle.candidate_files.len(),
+            max,
+            counters,
+            failures,
+        );
+    }
+    if let Some(max) = case.expect.max_candidate_symbols {
+        check_count_at_most(
+            case,
+            "max_candidate_symbols",
+            bundle.candidate_symbols.len(),
+            max,
+            counters,
+            failures,
+        );
+    }
     check_contains_all(
         case,
         "repo_context_contains",
@@ -537,6 +618,7 @@ fn check_source_evidence_expectations(
             ));
         }
     }
+    check_runtime_output_forbidden(case, bundle, counters, failures);
 }
 
 fn check_symbols_expectations(

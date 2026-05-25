@@ -134,13 +134,22 @@
 - Add broad-query, ignored-path, malformed-source, and missing-reference cases.
 - Prove selector hints stay context handles rather than edit targets.
 - Keep `where-to-edit` as `insufficient_evidence`.
+- Keep `eval_contract_version` at `0.4` unless the report shape changes.
+- Recommended follow-up: Phase 3A LSP diagnostics/reference bridge design if adversarial failures point to missing references/diagnostics; otherwise Phase 2H SymbolGraph-lite hardening if symbol extraction or duplicate-name handling is weak.
 
-## Phase 3: LSP diagnostics bridge
+## Phase 3A: LSP diagnostics/reference bridge design
 
-- Start with TypeScript project diagnostics through a minimal `tsserver` or language-server process bridge.
+- Design the read-only boundary for diagnostics and references before implementation.
+- Decide whether the first bridge is Rust-oriented, TypeScript-oriented, or protocol-oriented.
+- Define evidence-backed diagnostics/reference contracts and refusal behavior.
+- Keep SQLite, MCP, embeddings, mutation tools, and confident `where-to-edit` deferred.
+
+## Phase 3B: LSP diagnostics bridge implementation candidate
+
+- Start with one language/server only after Phase 3A design is accepted.
 - Capture diagnostics snapshots without mutating code.
-- Store diagnostics in SQLite and compute before/after deltas.
-- Add Python/Pyright only after TypeScript diagnostics are stable.
+- Keep before/after deltas in memory until storage is justified.
+- Add more languages only after one bridge is stable.
 
 ## Phase 4: EvidenceBundle and ProcessReward
 

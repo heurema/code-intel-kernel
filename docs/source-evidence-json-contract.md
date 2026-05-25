@@ -1,10 +1,10 @@
 # Source Evidence JSON Contract
 
-Status: Phase 2F prototype contract, version `0.3`.
+Status: Phase 2G validated prototype contract, version `0.3`.
 
 `source-evidence` assembles evidence from RepoGraph and SymbolGraph-lite for a query. It is read-only and does not identify edit locations.
 
-Phase 2E adds `source-context` as a separate explicit-selector slicing layer. Phase 2F adds explicit SourceContext selector hints to `source-evidence`. `source-evidence` output does not include snippets by default.
+Phase 2E adds `source-context` as a separate explicit-selector slicing layer. Phase 2F adds explicit SourceContext selector hints to `source-evidence`. Phase 2G adds adversarial eval cases for ambiguity and refusal behavior without changing the JSON shape. `source-evidence` output does not include snippets by default.
 
 ## Command
 

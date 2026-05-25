@@ -736,6 +736,50 @@ fn where_to_edit_remains_insufficient_evidence_placeholder() {
     assert!(json["data"]["symbols"]
         .as_array()
         .is_some_and(Vec::is_empty));
+    assert_json_has_no_edit_target_language(&json);
+}
+
+#[test]
+fn where_to_edit_still_refuses_after_selector_hints_and_source_context() {
+    let bundle =
+        build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "top_level_function");
+    assert!(!bundle.source_context_selectors.is_empty());
+
+    let selector = bundle
+        .source_context_selectors
+        .iter()
+        .find(|selector| selector.selector_kind == SourceContextSelectorKind::SymbolId)
+        .expect("symbol selector hint should exist");
+    let report = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::SymbolId {
+            symbol_id: selector
+                .symbol_id
+                .clone()
+                .expect("selector should have symbol id"),
+        }],
+    );
+    assert_eq!(report.status, SourceContextStatus::Ok);
+
+    let binary = env!("CARGO_BIN_EXE_code-intel");
+    let output = Command::new(binary)
+        .args([
+            "where-to-edit",
+            "top_level_function",
+            "--profile=strict",
+            "--json",
+        ])
+        .output()
+        .expect("where-to-edit command should run");
+    assert!(output.status.success());
+    let json: JsonValue =
+        serde_json::from_slice(&output.stdout).expect("where-to-edit output should be JSON");
+    assert_eq!(json["status"], "insufficient_evidence");
+    assert!(json["data"]["files"].as_array().is_some_and(Vec::is_empty));
+    assert!(json["data"]["symbols"]
+        .as_array()
+        .is_some_and(Vec::is_empty));
+    assert_json_has_no_edit_target_language(&json);
 }
 
 #[test]
@@ -1333,11 +1377,31 @@ fn source_context_cli_output_is_valid_json() {
         .any(|slice| slice.file_path == "src/lib.rs"));
 }
 
+fn assert_json_has_no_edit_target_language(value: &JsonValue) {
+    let json = serde_json::to_string(value).expect("JSON value should serialize");
+    for forbidden in [
+        "edit this",
+        "edit here",
+        "target_edit",
+        "edit_location",
+        "patch target",
+        "apply patch",
+        "root cause",
+        "change this",
+        "correct edit location",
+    ] {
+        assert!(
+            !json.contains(forbidden),
+            "runtime output should not contain edit-target phrase: {forbidden}"
+        );
+    }
+}
+
 #[test]
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
-    assert!(cases.len() >= 29);
+    assert!(cases.len() >= 35);
     assert!(cases
         .iter()
         .any(|case| case.name == "cargo_workspace_dependency_impact"));
@@ -1362,7 +1426,7 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
 
     assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
     assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
-    assert!(report.total_cases >= 29);
+    assert!(report.total_cases >= 35);
     assert!(report.inspect_cases > 0);
     assert!(report.impact_cases > 0);
     assert!(report.symbol_cases > 0);
@@ -1483,6 +1547,27 @@ fn source_context_eval_cases_pass() {
             .expect("source context eval case should be present");
         assert!(result.passed, "{case_name} failed: {:?}", result.failures);
         assert_eq!(result.kind, EvalCaseKind::SourceContext);
+    }
+}
+
+#[test]
+fn adversarial_localization_eval_cases_pass() {
+    let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
+
+    for case_name in [
+        "adversarial_duplicate_symbol_source_evidence",
+        "adversarial_reference_query_source_evidence",
+        "adversarial_unsupported_language_source_evidence",
+        "adversarial_component_without_symbol_source_evidence",
+        "adversarial_source_context_path_outside",
+        "adversarial_source_context_malformed_slice",
+    ] {
+        let result = report
+            .cases
+            .iter()
+            .find(|case| case.name == case_name)
+            .expect("adversarial eval case should be present");
+        assert!(result.passed, "{case_name} failed: {:?}", result.failures);
     }
 }
 

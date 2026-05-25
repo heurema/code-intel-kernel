@@ -1,0 +1,14 @@
+{
+  "name": "adversarial_source_context_malformed_slice",
+  "fixture": "tests/fixtures/rust-symbols-malformed",
+  "kind": "source_context",
+  "selector_file": "src/lib.rs",
+  "selector_lines": "1:5",
+  "expect": {
+    "status": "ok",
+    "slices_contains": ["src/lib.rs"],
+    "slice_text_contains": ["pub fn broken("],
+    "warnings_contains_categories": ["source_context_not_localization"],
+    "max_slice_lines": 5
+  }
+}

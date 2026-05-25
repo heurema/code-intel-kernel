@@ -1,6 +1,6 @@
 # Localization Readiness Checklist
 
-Status: Phase 2F gate. Current conclusion: `not_ready_for_confident_localization`.
+Status: Phase 2G adversarial gate. Current conclusion: `not_ready_for_confident_localization`.
 
 This checklist defines what must be true before `where-to-edit` can return confident file or symbol candidates.
 
@@ -53,11 +53,33 @@ This checklist defines what must be true before `where-to-edit` can return confi
 - [x] SourceEvidence emits explicit SourceContext selector hints.
   Evidence: source-evidence eval cases for selector hints; smoke test `source_evidence_selector_hint_can_feed_source_context_manually`.
 
+- [x] Duplicate source symbol names are tested.
+  Evidence: eval case `adversarial_duplicate_symbol_source_evidence`.
+
+- [x] Reference/call-graph-style queries refuse missing evidence.
+  Evidence: eval case `adversarial_reference_query_source_evidence`.
+
+- [x] Unsupported-language source does not become SymbolGraph evidence.
+  Evidence: eval case `adversarial_unsupported_language_source_evidence`.
+
+- [x] RepoGraph/component text without source-symbol evidence does not create source candidates.
+  Evidence: eval case `adversarial_component_without_symbol_source_evidence`.
+
+- [x] SourceContext path traversal refusal is tested.
+  Evidence: eval case `adversarial_source_context_path_outside`.
+
+- [x] Malformed source can be sliced only through explicit safe selectors.
+  Evidence: eval case `adversarial_source_context_malformed_slice`.
+
+- [x] Runtime outputs avoid edit-target language.
+  Evidence: source-evidence/source-context eval `output_not_contains`; smoke tests `source_evidence_output_has_no_edit_target_language`, `source_context_output_is_deterministic_and_has_no_edit_target_language`, and `where_to_edit_still_refuses_after_selector_hints_and_source_context`.
+
 - [ ] Candidate files and symbols are tied to queries by semantic/evaluated relevance evidence, not only string matching.
 - [ ] SymbolGraph-to-RepoGraph linking is defined and tested.
 - [ ] Reference/import/call graph decision is made.
 - [ ] LSP diagnostics bridge decision is made.
-- [ ] Negative localization fixtures prove no false confident candidate behavior.
+- [x] Negative localization fixtures prove no false confident candidate behavior.
+  Evidence: Phase 2G adversarial eval cases plus `where-to-edit` refusal tests.
 - [x] Source context/snippet policy is defined for explicit selectors.
   Evidence: `docs/source-context-json-contract.md`.
 - [ ] False broad versus false narrow localization metrics exist.
@@ -66,4 +88,4 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 `not_ready_for_confident_localization`
 
-Phase 2F verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, refusal behavior, bounded read-only source slices, and explicit selector hints. It still uses deterministic string/token matching and explicit selectors. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.
+Phase 2G verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, refusal behavior, bounded read-only source slices, explicit selector hints, and adversarial refusal cases. It still uses deterministic string/token matching and explicit selectors. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.

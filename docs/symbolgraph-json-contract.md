@@ -161,4 +161,4 @@ SymbolGraph-lite eval cases use semantic assertions over:
 - evidence coverage;
 - deterministic output.
 
-The eval harness report uses `eval_contract_version = "0.4"` after Phase 2E because it includes `symbol_cases`, `source_evidence_cases`, and `source_context_cases`. The `symbols` JSON contract remains `0.1`.
+The eval harness report uses `eval_contract_version = "0.4"` after Phase 2G because it includes `symbol_cases`, `source_evidence_cases`, `source_context_cases`, and adversarial refusal cases without changing the report shape. The `symbols` JSON contract remains `0.1`.

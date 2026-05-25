@@ -1,0 +1,39 @@
+{
+  "name": "adversarial_duplicate_symbol_source_evidence",
+  "fixture": "tests/fixtures/rust-duplicate-symbols",
+  "kind": "source_evidence",
+  "query": "render",
+  "expect": {
+    "status": "partial",
+    "confidence": "high",
+    "candidate_symbols_contains": [
+      { "name": "render", "kind": "function" }
+    ],
+    "selector_hint_symbols_contains": [
+      { "name": "render", "kind": "function" }
+    ],
+    "warnings_contains_categories": [
+      "multiple_candidates",
+      "query_too_broad",
+      "localization_not_supported"
+    ],
+    "missing_evidence_contains": [
+      "ambiguous_source_match",
+      "no_symbol_reference_layer"
+    ],
+    "max_candidate_files": 2,
+    "max_candidate_symbols": 2,
+    "max_source_context_selectors": 4,
+    "output_not_contains": [
+      "edit this",
+      "edit here",
+      "edit_location",
+      "target_edit",
+      "patch target",
+      "apply patch",
+      "root cause",
+      "change this",
+      "correct edit location"
+    ]
+  }
+}
