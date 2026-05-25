@@ -1,0 +1,40 @@
+{
+  "date": "2026-05-25",
+  "sources": [
+    {
+      "id": "tree-sitter",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "last_observed_update": "2026-05-25T15:15:24Z"
+    },
+    {
+      "id": "rust-analyzer",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "last_observed_update": "2026-05-25T14:04:59Z"
+    },
+    {
+      "id": "codebase-memory",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "last_observed_update": "2026-05-25T13:52:15Z"
+    },
+    {
+      "id": "rig-spade",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/GreenFuze/spade",
+      "last_observed_update": "2026-05-22T10:38:56Z"
+    },
+    {
+      "id": "swe-bench",
+      "status": "error",
+      "checked_via": "curl",
+      "canonical_url": "https://www.swebench.com/",
+      "error": "HTTP request timed out after 20 seconds."
+    }
+  ]
+}

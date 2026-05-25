@@ -1,0 +1,17 @@
+{
+  "date": "2026-05-25",
+  "kind": "manual_dry_run",
+  "sources_checked": [
+    "tree-sitter",
+    "rust-analyzer",
+    "codebase-memory",
+    "rig-spade",
+    "swe-bench"
+  ],
+  "report_md": "research-radar/reports/2026-05-25.md",
+  "report_json": "research-radar/reports/2026-05-25.json",
+  "runtime_code_modified": false,
+  "automation_created": false,
+  "implementation_triggered": false,
+  "experiment_candidate": null
+}

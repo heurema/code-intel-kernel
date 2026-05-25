@@ -1,0 +1,191 @@
+{
+  "date": "2026-05-25",
+  "sources_checked": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rig-spade",
+      "name": "RIG/SPADE repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "swe-bench",
+      "name": "SWE-bench homepage",
+      "status": "error",
+      "errors": [
+        "HTTP request timed out after 20 seconds."
+      ]
+    }
+  ],
+  "new_items": [
+    {
+      "title": "Tree-sitter v0.26.9",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/releases/tag/v0.26.9",
+      "score": 73,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before parser hardening.",
+      "reason_not_now": "No evidence that current Rust top-level extraction is affected.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "rust-analyzer 2026-05-25",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/releases/tag/2026-05-25",
+      "score": 78,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "add eval case",
+      "confidence": "high",
+      "estimated_cost": "medium",
+      "expected_upside": "Reduce brittleness before definitions/references.",
+      "reason_not_now": "R1 must not create code tasks; capture as future eval/design need.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "Codebase-Memory v0.6.1",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp/releases/tag/v0.6.1",
+      "score": 82,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "high",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify boundaries before MCP/SQLite/call graph work.",
+      "reason_not_now": "Below prototype threshold and too broad for current kernel stage.",
+      "license_or_terms_note": "MIT reported by GitHub API; reuse still needs license review."
+    }
+  ],
+  "top_items": [
+    {
+      "title": "Compare SourceEvidence/SourceContext against Codebase-Memory tool boundaries",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "score": 82,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "high",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clearer boundary for what not to import into the staged kernel yet.",
+      "reason_not_now": "Below prototype threshold and implementation risks premature MCP/SQLite/call graph scope.",
+      "license_or_terms_note": "MIT reported by GitHub API; license review required before reuse."
+    },
+    {
+      "title": "Add LSP diagnostics/release compatibility notes before references",
+      "source": "rust-analyzer release",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/releases/tag/2026-05-25",
+      "score": 78,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "add eval case",
+      "confidence": "high",
+      "estimated_cost": "medium",
+      "expected_upside": "Less brittle Phase 3B-B when definitions/references start.",
+      "reason_not_now": "R1 output must not create code tasks.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "Track Tree-sitter release and CLI artifact-path behavior",
+      "source": "Tree-sitter release",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/releases/tag/v0.26.9",
+      "score": 73,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before expanding parser coverage.",
+      "reason_not_now": "No evidence current extraction is affected.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    }
+  ],
+  "archive_items": [
+    {
+      "title": "RIG/SPADE recent activity",
+      "source": "RIG/SPADE repository",
+      "canonical_url": "https://github.com/GreenFuze/spade",
+      "score": 64,
+      "reason": "High conceptual relevance but low recent repo activity; keep weekly/background."
+    },
+    {
+      "title": "SWE-bench daily check",
+      "source": "SWE-bench homepage",
+      "canonical_url": "https://www.swebench.com/",
+      "score": 0,
+      "reason": "Source unavailable by timeout; no benchmark delta observed."
+    }
+  ],
+  "experiment_candidate": null,
+  "source_health": [
+    {
+      "id": "tree-sitter",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter"
+    },
+    {
+      "id": "rust-analyzer",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer"
+    },
+    {
+      "id": "codebase-memory",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp"
+    },
+    {
+      "id": "rig-spade",
+      "status": "ok",
+      "checked_via": "gh api",
+      "canonical_url": "https://github.com/GreenFuze/spade"
+    },
+    {
+      "id": "swe-bench",
+      "status": "error",
+      "checked_via": "curl",
+      "canonical_url": "https://www.swebench.com/",
+      "error": "HTTP request timed out after 20 seconds."
+    }
+  ],
+  "errors": [
+    {
+      "source": "swe-bench",
+      "message": "HTTP request timed out after 20 seconds."
+    },
+    {
+      "source": "github-api-curl",
+      "message": "Unauthenticated GitHub API requests returned 403; gh api succeeded for public repository metadata."
+    }
+  ],
+  "next_actions": [
+    "Keep Tree-sitter, rust-analyzer, and Codebase-Memory in R2.",
+    "Demote RIG/SPADE activity checks to weekly unless paper artifacts change.",
+    "Retry SWE-bench through a lighter endpoint or replace it with Aider RepoMap.",
+    "Add one arXiv query in R2 to test paper-noise behavior."
+  ],
+  "dry_run_evaluation": {
+    "source_set_too_noisy": false,
+    "scoring_observation": "Conservative; no item crossed the prototype threshold.",
+    "premature_implementation_temptation": "Codebase-Memory is tempting but remains a design comparison only.",
+    "recommendation": "Keep scoring, adjust SWE-bench source path, add one arXiv query in R2."
+  }
+}
