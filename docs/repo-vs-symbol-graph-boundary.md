@@ -32,6 +32,16 @@ RepoGraph output must remain evidence-backed and deterministic. It should prefer
 
 SymbolGraph facts must be evidence-backed and deterministic. Parse failures should produce structured warnings, not panics.
 
+Phase 2A implements only SymbolGraph-lite:
+
+- Rust source files;
+- top-level Rust declarations;
+- parse status;
+- declaration ranges;
+- source-level evidence.
+
+It still does not own calls, references, imports/exports, LSP diagnostics, or edit localization.
+
 ## Explicit Non-Goals
 
 RepoGraph must not:

@@ -47,9 +47,11 @@ Punk can use this module as a fast/prototype consumer:
 
 ## Product boundary
 
-The current stable layer is RepoGraph: repository/build/test-level `inspect`, `impact`, and `eval-fixtures`.
+The current stable foundation is RepoGraph: repository/build/test-level `inspect`, `impact`, and `eval-fixtures`.
 
-SymbolGraph, LSP, SQLite, MCP, embeddings, process reward, and confident edit localization are later layers. `where-to-edit` must return `insufficient_evidence` until evaluated SymbolGraph/localization evidence exists.
+The current source-level layer is SymbolGraph-lite: Rust top-level `symbols` output only.
+
+LSP, SQLite, MCP, embeddings, process reward, call graph, references, and confident edit localization are later layers. `where-to-edit` must return `insufficient_evidence` until evaluated localization evidence exists.
 
 ## First product boundary
 
@@ -57,9 +59,10 @@ The first version should answer:
 
 1. What is in this repository?
 2. What repository/build/test components are evidenced?
-3. What tests/lint/build commands are likely affected?
-4. When must the kernel refuse to guess?
-5. What does fixture evaluation say about current quality?
+3. Which Rust top-level source facts are evidenced?
+4. What tests/lint/build commands are likely affected?
+5. When must the kernel refuse to guess?
+6. What does fixture evaluation say about current quality?
 
 ## Non-goals
 
@@ -79,6 +82,7 @@ A CLI that can run locally:
 code-intel inspect .
 code-intel impact src/main.rs Cargo.toml --json
 code-intel eval-fixtures --json
+code-intel symbols . --json
 code-intel where-to-edit "change login validation copy" --profile=strict --json
 ```
 
@@ -88,5 +92,6 @@ code-intel where-to-edit "change login validation copy" --profile=strict --json
 - Produces evidence-backed RepoGraph inspect output.
 - Produces conservative RepoGraph-only impact output.
 - Measures quality with fixture-based eval.
+- Produces evidence-backed Rust top-level SymbolGraph-lite output.
 - Keeps `where-to-edit` as `insufficient_evidence`.
-- Does not require Tree-sitter, LSP, SQLite, MCP, embeddings, or external services.
+- Does not require LSP, SQLite, MCP, embeddings, or external services.

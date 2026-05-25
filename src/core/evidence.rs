@@ -74,7 +74,7 @@ pub fn create_evidence_bundle(request: EvidenceRequest) -> EvidenceBundle {
         commands: Vec::new(),
         risks: Vec::new(),
         missing_evidence: vec![
-            "RepoGraph, SymbolGraph, and LSP evidence are not implemented yet.".to_string(),
+            "RepoGraph inspect/impact exists, but edit-localization evidence and LSP evidence are not implemented yet.".to_string(),
         ],
     }
 }

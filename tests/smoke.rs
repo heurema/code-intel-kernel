@@ -1,9 +1,11 @@
 use code_intel_kernel::{
-    analyze_impact, create_evidence_bundle, evaluate_cases, inspect_repo, load_eval_cases,
-    run_fixture_evaluation, DetectionCategory, DetectionSeverity, EvalCase, EvalCaseKind,
-    EvalExpect, EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport, ImpactScope,
-    ImpactStatus, KernelProfile, RelationshipKind, RepoInspection, EVAL_CONTRACT_VERSION,
-    IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
+    analyze_impact, build_symbol_graph, create_evidence_bundle, evaluate_cases, inspect_repo,
+    load_eval_cases, run_fixture_evaluation, symbol_graph_evidence_valid, DetectionCategory,
+    DetectionSeverity, EvalCase, EvalCaseKind, EvalExpect, EvidenceRequest, ImpactConfidence,
+    ImpactKind, ImpactReport, ImpactScope, ImpactStatus, KernelProfile, ParseStatus,
+    RelationshipKind, RepoInspection, SymbolGraph, SymbolKind, SymbolWarningCategory,
+    EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
+    SYMBOLS_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
 use std::process::Command;
@@ -732,6 +734,126 @@ fn where_to_edit_remains_insufficient_evidence_placeholder() {
 }
 
 #[test]
+fn symbol_graph_extracts_top_level_rust_symbols() {
+    let graph = build_symbol_graph("tests/fixtures/rust-symbols-basic");
+
+    assert_eq!(graph.contract_version, SYMBOLS_CONTRACT_VERSION);
+    assert!(graph
+        .source_files
+        .iter()
+        .any(|file| file.path == "src/lib.rs" && file.parse_status == ParseStatus::Ok));
+    for (kind, name) in [
+        (SymbolKind::Function, "top_level_function"),
+        (SymbolKind::Struct, "Widget"),
+        (SymbolKind::Enum, "Mode"),
+        (SymbolKind::Trait, "Runner"),
+        (SymbolKind::TypeAlias, "WidgetId"),
+        (SymbolKind::Const, "DEFAULT_LIMIT"),
+        (SymbolKind::Static, "GLOBAL_LIMIT"),
+        (SymbolKind::Module, "nested"),
+    ] {
+        assert!(
+            graph
+                .symbols
+                .iter()
+                .any(|symbol| symbol.kind == kind && symbol.name == name),
+            "missing symbol {kind:?} {name}"
+        );
+    }
+    assert!(graph
+        .symbols
+        .iter()
+        .any(|symbol| symbol.kind == SymbolKind::ImplBlock && symbol.name.starts_with("impl@")));
+    assert_symbol_graph_evidence_refs_exist(&graph);
+}
+
+#[test]
+fn symbol_graph_does_not_extract_nested_functions_as_top_level() {
+    let graph = build_symbol_graph("tests/fixtures/rust-symbols-basic");
+
+    assert!(!graph
+        .symbols
+        .iter()
+        .any(|symbol| symbol.name == "nested_helper"));
+    assert!(!graph.symbols.iter().any(|symbol| symbol.name == "new"));
+}
+
+#[test]
+fn malformed_rust_source_produces_symbol_warning_without_panic() {
+    let graph = build_symbol_graph("tests/fixtures/rust-symbols-malformed");
+
+    assert!(graph
+        .source_files
+        .iter()
+        .any(|file| file.path == "src/lib.rs" && file.parse_status == ParseStatus::Error));
+    assert!(graph.symbols.is_empty());
+    assert!(graph.warnings.iter().any(|warning| warning.category
+        == SymbolWarningCategory::ParseError
+        && warning.evidence_id.is_some()));
+    assert_symbol_graph_evidence_refs_exist(&graph);
+}
+
+#[test]
+fn symbol_graph_ignores_generated_and_dependency_directories() {
+    let graph = build_symbol_graph("tests/fixtures/rust-symbols-ignored");
+
+    assert!(graph.symbols.iter().any(|symbol| symbol.name == "visible"));
+    assert!(!graph
+        .source_files
+        .iter()
+        .any(|file| file.path.contains("target/") || file.path.contains("node_modules/")));
+    assert!(!graph.symbols.iter().any(
+        |symbol| symbol.name == "ignored_target_symbol" || symbol.name == "ignored_node_symbol"
+    ));
+}
+
+#[test]
+fn symbol_graph_ids_and_order_are_deterministic() {
+    let first = build_symbol_graph("tests/fixtures/rust-symbols-basic");
+    let second = build_symbol_graph("tests/fixtures/rust-symbols-basic");
+
+    assert_eq!(first.source_files, second.source_files);
+    assert_eq!(first.symbols, second.symbols);
+    assert_eq!(first.evidence, second.evidence);
+    assert_eq!(first.warnings, second.warnings);
+    assert!(first
+        .symbols
+        .iter()
+        .all(|symbol| symbol.id.starts_with("symbol-")));
+}
+
+#[test]
+fn every_symbol_graph_source_file_and_symbol_has_valid_evidence() {
+    let graph = build_symbol_graph("tests/fixtures/rust-symbols-basic");
+
+    assert!(symbol_graph_evidence_valid(&graph));
+    assert_symbol_graph_evidence_refs_exist(&graph);
+}
+
+#[test]
+fn symbols_cli_output_is_valid_json() {
+    let binary = env!("CARGO_BIN_EXE_code-intel");
+    let output = Command::new(binary)
+        .args(["symbols", "tests/fixtures/rust-symbols-basic", "--json"])
+        .output()
+        .expect("symbols command should run");
+
+    assert!(
+        output.status.success(),
+        "symbols command failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let graph: SymbolGraph =
+        serde_json::from_slice(&output.stdout).expect("symbols output should be JSON");
+    assert_eq!(graph.contract_version, SYMBOLS_CONTRACT_VERSION);
+    assert!(graph
+        .symbols
+        .iter()
+        .any(|symbol| symbol.name == "top_level_function"));
+}
+
+#[test]
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
@@ -938,5 +1060,33 @@ fn assert_all_warnings_are_structured(graph: &RepoInspection) {
     for warning in &graph.warnings {
         assert!(warning.id.starts_with("warning-"));
         assert!(!warning.message.is_empty());
+    }
+}
+
+fn assert_symbol_graph_evidence_refs_exist(graph: &SymbolGraph) {
+    let evidence_ids = graph
+        .evidence
+        .iter()
+        .map(|evidence| evidence.id.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+
+    for source_file in &graph.source_files {
+        assert!(!source_file.evidence_ids.is_empty());
+        for evidence_id in &source_file.evidence_ids {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
+    }
+
+    for symbol in &graph.symbols {
+        assert!(!symbol.evidence_ids.is_empty());
+        for evidence_id in &symbol.evidence_ids {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
+    }
+
+    for warning in &graph.warnings {
+        if let Some(evidence_id) = &warning.evidence_id {
+            assert!(evidence_ids.contains(evidence_id.as_str()));
+        }
     }
 }

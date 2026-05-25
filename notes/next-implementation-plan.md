@@ -87,7 +87,8 @@
 
 ## Phase 2B: Source-level evidence bundles
 
-- Use evaluated SymbolGraph facts to enrich EvidenceBundle output.
+- Use evaluated SymbolGraph-lite facts to enrich EvidenceBundle output.
+- Consider adding SymbolGraph-lite cases to the eval harness before using symbols for any recommendations.
 - Keep localization conservative and evidence-backed.
 - Keep RepoGraph commands/tests as the build/test validation source.
 - Only consider `where-to-edit` candidates after symbol extraction quality is measured.

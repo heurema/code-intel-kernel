@@ -83,14 +83,15 @@ config/
 
 ## Immediate objective
 
-The current implementation is a **read-only, structural-first kernel** with a stable RepoGraph layer:
+The current implementation is a **read-only, structural-first kernel** with a stable RepoGraph layer and a narrow SymbolGraph-lite layer:
 
 1. `inspect`: evidence-backed repository/build/test facts.
 2. `impact`: conservative RepoGraph-only impact from changed files.
 3. `eval-fixtures`: fixture-based quality gate for inspect and impact.
-4. `where-to-edit`: still returns `insufficient_evidence` until evaluated SymbolGraph/localization evidence exists.
+4. `symbols`: evidence-backed Rust top-level source facts.
+5. `where-to-edit`: still returns `insufficient_evidence` until evaluated localization evidence exists.
 
-The next candidate layer is **Phase 2A SymbolGraph-lite**:
+The current SymbolGraph-lite scope is intentionally narrow:
 
 - Rust/top-level source facts first.
 - Evidence-backed deterministic IDs.
@@ -113,7 +114,7 @@ Do **not** build these first:
 - Automatic refactor tools.
 - UI/dashboard.
 
-The current first milestone is CLI/library only: RepoGraph inspect, impact, and eval. SQLite and MCP remain deferred until core CLI/API behavior is stable.
+The current first milestone is CLI/library only: RepoGraph inspect, impact, eval, and SymbolGraph-lite symbols. SQLite and MCP remain deferred until core CLI/API behavior is stable.
 
 ## First Codex instruction
 

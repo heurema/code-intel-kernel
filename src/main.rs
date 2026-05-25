@@ -1,6 +1,6 @@
 use code_intel_kernel::{
-    analyze_impact, create_evidence_bundle, inspect_repo, run_fixture_evaluation, EvidenceRequest,
-    KernelProfile,
+    analyze_impact, build_symbol_graph, create_evidence_bundle, inspect_repo,
+    run_fixture_evaluation, EvidenceRequest, KernelProfile,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -28,6 +28,17 @@ fn run(args: Vec<String>) -> i32 {
             let snapshot = inspect_repo(".");
             let report = analyze_impact(&snapshot, changed_files);
             print_json(&report);
+            0
+        }
+        Some("symbols") | Some("symbol-graph") => {
+            let repo_path = args
+                .iter()
+                .skip(1)
+                .find(|arg| !arg.starts_with("--"))
+                .map(String::as_str)
+                .unwrap_or(".");
+            let snapshot = build_symbol_graph(repo_path);
+            print_json(&snapshot);
             0
         }
         Some("eval-fixtures") => match run_fixture_evaluation("tests/eval/cases") {
@@ -69,13 +80,13 @@ fn run(args: Vec<String>) -> i32 {
                     "commands": [],
                     "risks": [],
                     "missing_evidence": [
-                        "SymbolGraph is not implemented",
+                        "SymbolGraph-lite is not evaluated for edit localization",
                         "No file/symbol relevance model yet"
                     ]
                 },
                 "evidence": [],
                 "confidence": 0,
-                "warnings": ["where-to-edit is intentionally a placeholder until SymbolGraph exists"]
+                "warnings": ["where-to-edit is intentionally a placeholder until evaluated localization evidence exists"]
             }));
             0
         }
@@ -135,7 +146,7 @@ fn split_changed_files(value: &str) -> Vec<String> {
 
 fn print_help() {
     println!(
-        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nThis is a documentation-first Rust skeleton. RepoGraph impact is repository/build/test-level only; SymbolGraph, LSP, SQLite, MCP, EvidenceBundle, and ProcessReward implementations are intentionally deferred."
+        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel symbols <repo-path> [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nRepoGraph impact is repository/build/test-level only. SymbolGraph-lite extracts top-level Rust source facts only. LSP, SQLite, MCP, EvidenceBundle, ProcessReward, call graph, references, and edit localization are intentionally deferred."
     );
 }
 

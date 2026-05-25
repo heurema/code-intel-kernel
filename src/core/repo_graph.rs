@@ -335,7 +335,7 @@ where
             id: "impact-warning-repo-graph-only".to_string(),
             severity: DetectionSeverity::Info,
             category: DetectionCategory::RepoGraphOnly,
-            message: "SymbolGraph is not implemented; impact is based on repository structure and paths only.".to_string(),
+            message: "Symbol-level impact is not implemented; impact is based on repository structure and paths only.".to_string(),
             path: None,
             evidence_id: None,
         },
