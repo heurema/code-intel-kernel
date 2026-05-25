@@ -1,5 +1,20 @@
 # Next Implementation Plan
 
+## Parallel R&D workflow: Research Radar
+
+- Pause feature development unless a Research Radar item produces a human-approved experiment proposal.
+- Keep Phase 3B-B deferred while Research Radar v0.1 is introduced.
+- Keep Research Radar v0.1 documentation/config only:
+  - source manifest;
+  - scoring rubric;
+  - guardrails;
+  - daily digest templates;
+  - Codex prompts for digest and experiment proposal generation.
+- Do not schedule automation yet.
+- Do not fetch live sources as part of scaffold setup.
+- Do not import external code.
+- Treat Research Radar output as candidate evidence, not a feature backlog or implementation trigger.
+
 ## Phase 0: repo skeleton
 
 - Keep the current Rust CLI/library skeleton minimal and read-only.

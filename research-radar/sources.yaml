@@ -1,0 +1,201 @@
+manifest_version: "0.1"
+purpose: "Research intake sources for code-intel-kernel."
+policy:
+  runtime_code_changes_allowed: false
+  automated_implementation_allowed: false
+  scheduled_automation_enabled: false
+  public_sources_only: true
+  login_required_scraping_allowed: false
+  external_code_import_allowed: false
+placeholders:
+  today: "${TODAY}"
+  today_minus_2d: "${TODAY_MINUS_2D}"
+  today_minus_7d: "${TODAY_MINUS_7D}"
+  today_minus_30d: "${TODAY_MINUS_30D}"
+sources:
+  p0_daily:
+    - id: arxiv-code-agents
+      name: "arXiv code agents"
+      type: "query"
+      cadence: "daily"
+      url: null
+      status: "needs_verification"
+      query_template: '(agent OR agents OR "coding agent" OR "software engineering agent") AND (code OR repository OR "program repair") AND submittedDate >= ${TODAY_MINUS_2D}'
+      relevance: "AI coding agents, repository reasoning, and program repair research."
+    - id: arxiv-code-graphs
+      name: "arXiv code graphs"
+      type: "query"
+      cadence: "daily"
+      url: null
+      status: "needs_verification"
+      query_template: '("code graph" OR "repository graph" OR "call graph" OR "Tree-sitter" OR "code intelligence") AND submittedDate >= ${TODAY_MINUS_2D}'
+      relevance: "Structural retrieval, source facts, parser-backed code graphs."
+    - id: github-research-repos
+      name: "GitHub research repositories"
+      type: "query"
+      cadence: "daily"
+      url: null
+      status: "needs_verification"
+      query_template: '("code intelligence" OR "coding agent" OR "repository graph" OR "Tree-sitter") pushed:>=${TODAY_MINUS_7D}'
+      relevance: "New or updated implementation artifacts."
+    - id: tree-sitter
+      name: "Tree-sitter GitHub repository"
+      type: "repo"
+      cadence: "daily"
+      url: "https://github.com/tree-sitter/tree-sitter"
+      status: "verified_seed"
+      query_template: null
+      relevance: "Parser infrastructure for future SymbolGraph hardening."
+    - id: rust-analyzer
+      name: "rust-analyzer GitHub repository"
+      type: "repo"
+      cadence: "daily"
+      url: "https://github.com/rust-lang/rust-analyzer"
+      status: "verified_seed"
+      query_template: null
+      relevance: "Rust LSP diagnostics, definitions, references, and disambiguation."
+    - id: codebase-memory
+      name: "Codebase-Memory repository/paper"
+      type: "paper_or_repo"
+      cadence: "daily"
+      url: "https://github.com/DeusData/codebase-memory-mcp"
+      status: "verified_seed"
+      query_template: '"Codebase-Memory" OR "Tree-sitter" "MCP" "SQLite" "code graph"'
+      relevance: "Persistent Tree-sitter graph, MCP, structural tools, and impact analysis."
+    - id: rig-spade
+      name: "RIG/SPADE repository/paper"
+      type: "paper_or_repo"
+      cadence: "daily"
+      url: "https://github.com/Greenfuze/Spade"
+      status: "verified_seed"
+      query_template: '("Repository Information Graph" OR RIG OR SPADE) AND ("software engineering" OR "coding agent")'
+      relevance: "Evidence-backed build/test architectural graph."
+    - id: swe-bench
+      name: "SWE-bench leaderboard and experiments"
+      type: "benchmark"
+      cadence: "daily"
+      url: "https://www.swebench.com/"
+      status: "verified_seed"
+      query_template: '"SWE-bench" OR "SWE-bench Verified"'
+      relevance: "Benchmark signals for repository-level and source-level agent performance."
+    - id: aider-repomap
+      name: "Aider RepoMap"
+      type: "repo_or_docs"
+      cadence: "daily"
+      url: "https://aider.chat/docs/repomap.html"
+      status: "verified_seed"
+      query_template: '"Aider" "RepoMap"'
+      relevance: "Repository map heuristics and code context selection."
+  p1_weekly:
+    - id: openreview-code-agents
+      name: "OpenReview code-agent query"
+      type: "query"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '("code agent" OR "software engineering agent" OR "repository") updated >= ${TODAY_MINUS_30D}'
+      relevance: "Peer-reviewed or under-review research."
+    - id: semantic-scholar-code-intelligence
+      name: "Semantic Scholar code-intelligence query"
+      type: "query"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '("code intelligence" OR "repository graph" OR "coding agent" OR "Tree-sitter") since ${TODAY_MINUS_30D}'
+      relevance: "Paper discovery and citation graph follow-up."
+    - id: codeql
+      name: "CodeQL"
+      type: "repo_or_docs"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: null
+      relevance: "Semantic code queries and security analysis inspiration."
+    - id: joern
+      name: "Joern"
+      type: "repo_or_docs"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: null
+      relevance: "Code property graph architecture and query patterns."
+    - id: openhands
+      name: "OpenHands"
+      type: "repo"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: null
+      relevance: "Open-source software engineering agent behavior."
+    - id: swe-agent
+      name: "SWE-agent"
+      type: "repo"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: null
+      relevance: "Agent workflows around SWE-bench."
+    - id: autocoderover
+      name: "AutoCodeRover"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: null
+      relevance: "Repository localization and repair strategy."
+    - id: agentless
+      name: "Agentless"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: null
+      relevance: "Non-agentic localization/repair baseline."
+    - id: repograph
+      name: "RepoGraph"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '"RepoGraph" "code"'
+      relevance: "Repository graph naming and adjacent structural retrieval work."
+    - id: locagent
+      name: "LocAgent"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '"LocAgent" "software"'
+      relevance: "Localization strategies and failure cases."
+    - id: graphcodeagent
+      name: "GraphCodeAgent"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '"GraphCodeAgent"'
+      relevance: "Graph-augmented coding-agent workflows."
+    - id: prometheus
+      name: "Prometheus"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '"Prometheus" "code agent" OR "Prometheus" "software engineering"'
+      relevance: "Potentially adjacent agent/evaluation systems."
+    - id: codexgraph
+      name: "CodexGraph"
+      type: "repo_or_paper"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '"CodexGraph"'
+      relevance: "Graph-based code intelligence systems."
+    - id: mcp-security
+      name: "MCP ecosystem security"
+      type: "query"
+      cadence: "weekly"
+      url: null
+      status: "needs_verification"
+      query_template: '("Model Context Protocol" OR MCP) AND (security OR sandbox OR "tool injection") updated >= ${TODAY_MINUS_30D}'
+      relevance: "Future MCP threat model and safety boundaries."

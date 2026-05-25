@@ -1,0 +1,63 @@
+{
+  "date": "YYYY-MM-DD",
+  "sources_checked": [
+    {
+      "id": "",
+      "name": "",
+      "status": "ok | partial | error | skipped",
+      "errors": []
+    }
+  ],
+  "new_items": [
+    {
+      "title": "",
+      "source": "",
+      "canonical_url": null,
+      "score": 0,
+      "affected_module": "",
+      "suggested_action": "",
+      "confidence": "low | medium | high",
+      "estimated_cost": "",
+      "expected_upside": "",
+      "reason_not_now": "",
+      "license_or_terms_note": ""
+    }
+  ],
+  "top_items": [
+    {
+      "title": "",
+      "source": "",
+      "canonical_url": null,
+      "score": 0,
+      "affected_module": "",
+      "suggested_action": "",
+      "confidence": "low | medium | high",
+      "estimated_cost": "",
+      "expected_upside": "",
+      "reason_not_now": "",
+      "license_or_terms_note": ""
+    }
+  ],
+  "archive_items": [
+    {
+      "title": "",
+      "source": "",
+      "canonical_url": null,
+      "score": 0,
+      "reason": ""
+    }
+  ],
+  "experiment_candidate": {
+    "title": "",
+    "source_url": null,
+    "source_type": "",
+    "hypothesis": "",
+    "minimal_reversible_change": "",
+    "evaluation_plan": "",
+    "stop_condition": "",
+    "reason_not_to_implement_immediately": ""
+  },
+  "source_health": [],
+  "errors": [],
+  "next_actions": []
+}
