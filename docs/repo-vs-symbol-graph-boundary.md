@@ -42,6 +42,8 @@ Phase 2A implements only SymbolGraph-lite:
 
 It still does not own calls, references, imports/exports, LSP diagnostics, or edit localization.
 
+Phase 2B adds evaluation coverage for SymbolGraph-lite and documents SourceEvidenceBundle as a future evidence packet. SourceEvidenceBundle does not move edit localization into SymbolGraph yet.
+
 ## Explicit Non-Goals
 
 RepoGraph must not:

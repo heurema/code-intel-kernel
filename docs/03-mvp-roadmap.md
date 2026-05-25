@@ -1,6 +1,6 @@
 # 03 — MVP Roadmap
 
-Status: historical bootstrap roadmap, updated by Phase 1G.
+Status: historical bootstrap roadmap, updated through Phase 2B.
 
 Current implementation source of truth:
 
@@ -27,7 +27,7 @@ Phase 0: Documentation and repo skeleton
 Phase 1: RepoGraph inspect, impact, and eval
 Phase 1G: SymbolGraph readiness gate
 Phase 2A: SymbolGraph-lite
-Phase 2B: Source-level evidence bundles
+Phase 2B: SymbolGraph eval and SourceEvidenceBundle contract
 Phase 3: LSP diagnostics bridge
 Phase 4: EvidenceBundle and ProcessReward
 Phase 5: SessionMemory
@@ -107,8 +107,8 @@ code-intel eval-fixtures --json
 - Finds common test/lint/build commands.
 - Produces evidence-backed inspect JSON.
 - Produces conservative RepoGraph-only impact JSON.
-- Runs fixture-based evaluation with deterministic output.
-- Does not require SQLite, MCP, LSP, Tree-sitter, or embeddings.
+- Runs fixture-based RepoGraph evaluation with deterministic output.
+- Does not require SQLite, MCP, LSP, or embeddings.
 
 ## Phase 2A — SymbolGraph-lite
 
@@ -136,8 +136,10 @@ Rust top-level source facts first, or a language-agnostic source-file graph stub
 ### CLI
 
 ```bash
-No public SymbolGraph CLI is required in Phase 2A.
+code-intel symbols . --json
 ```
+
+The `symbols` output has its own contract version and remains separate from `inspect` and `impact`.
 
 ### Acceptance criteria
 
@@ -152,17 +154,19 @@ No public SymbolGraph CLI is required in Phase 2A.
 - No embeddings.
 - `where-to-edit` remains `insufficient_evidence` unless a separately evaluated localization layer exists.
 
-## Phase 2B — Source-level evidence bundles
+## Phase 2B — SymbolGraph eval and source-level evidence bundle contract
 
 ### Goal
 
-Use evaluated SymbolGraph-lite facts to enrich evidence bundles.
+Measure SymbolGraph-lite facts through eval cases and document the SourceEvidenceBundle contract.
 
 ### Acceptance criteria
 
-- EvidenceBundle can include source-level facts without replacing RepoGraph build/test commands.
-- Localization remains conservative and evidence-backed.
-- `where-to-edit` only returns candidates after dedicated evaluation exists.
+- `eval-fixtures` includes `symbols` cases.
+- Source files and symbols remain evidence-backed and deterministic.
+- SourceEvidenceBundle is documented but not wired to `where-to-edit`.
+- Localization remains `not_ready_for_confident_localization`.
+- `where-to-edit` remains `insufficient_evidence`.
 
 ## Phase 3 — LSP diagnostics bridge
 

@@ -1,10 +1,10 @@
 # Evaluation Harness
 
-Status: Phase 1F RepoGraph evaluation contract draft.
+Status: Phase 2B fixture evaluation contract.
 
-The evaluation harness measures current `inspect` and `impact` behavior across small fixtures. It is intentionally limited to repository/build/test-level facts.
+The evaluation harness measures current `inspect`, `impact`, and `symbols` behavior across small fixtures.
 
-It does not evaluate symbols, imports, references, call graphs, edit planning, LSP diagnostics, embeddings, or MCP behavior.
+It does not evaluate imports, references, call graphs, edit planning, LSP diagnostics, embeddings, or MCP behavior.
 
 ## Command
 
@@ -18,12 +18,13 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 
 ```json
 {
-  "eval_contract_version": "0.1",
+  "eval_contract_version": "0.2",
   "total_cases": 0,
   "passed_cases": 0,
   "failed_cases": 0,
   "inspect_cases": 0,
   "impact_cases": 0,
+  "symbol_cases": 0,
   "metrics": {
     "evidence_coverage_pass_rate": 1.0,
     "expected_fact_recall": 1.0,
@@ -38,7 +39,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 }
 ```
 
-The eval report has its own contract version. It does not change the `inspect` or `impact` contracts.
+The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report now counts `symbol_cases` and accepts `symbols` eval cases. This does not change the `inspect`, `impact`, or `symbols` contracts.
 
 ## Case Format
 
@@ -67,8 +68,32 @@ Known `kind` values:
 
 - `inspect`
 - `impact`
+- `symbols`
 
 Expectations are semantic checks, not full-output snapshots. A case can assert required facts, forbidden facts, expected warning categories, unexpected warning categories, impact status, confidence, scope, and maximum impacted component count.
+
+Symbol cases use the same file format:
+
+```json
+{
+  "name": "rust_symbols_basic_symbols",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "symbols",
+  "expect": {
+    "source_files_contains": ["src/lib.rs"],
+    "symbols_contains": [
+      { "name": "top_level_function", "kind": "function" },
+      { "name": "Widget", "kind": "struct" }
+    ],
+    "symbols_not_contains": [
+      { "name": "nested_helper", "kind": "function" }
+    ],
+    "warnings_not_contains_categories": ["parse_error"]
+  }
+}
+```
+
+For `symbols_contains` and `symbols_not_contains`, `kind` and `path` may be supplied to make the match more specific. Symbol eval always checks evidence coverage and deterministic output across repeated extraction.
 
 ## Metrics
 
@@ -86,7 +111,7 @@ False broad means the kernel recommends or reports more than the fixture case al
 
 False narrow means the kernel misses expected components, commands, tests, or warnings. This is higher risk for build/test impact because a consumer could skip necessary validation.
 
-Phase 1F treats false narrow on core fixtures as a blocker for starting SymbolGraph.
+False narrow remains the higher-risk failure mode for future localization gates.
 
 ## Current Case Matrix
 
@@ -109,6 +134,9 @@ The initial case set covers:
 - Python tests without runner evidence refusal;
 - malformed Node manifest refusal;
 - no-dependency-edge impact boundary.
+- Rust top-level symbol extraction;
+- Rust malformed source parse warning;
+- ignored source paths for SymbolGraph-lite.
 
 ## Negative Case Rationale
 
@@ -123,14 +151,17 @@ The initial case set covers:
 - It does not score performance yet.
 - It does not persist historical trend data.
 
-## SymbolGraph Readiness Gate
+## Localization Gate
 
-Before starting SymbolGraph, the project should have:
+Before `where-to-edit` can stop refusing, the project should have:
 
 - all current inspect and impact eval cases passing;
+- all current symbols eval cases passing;
 - 100% evidence coverage on eval cases;
 - deterministic output across repeated runs;
 - zero false narrow count on core fixtures;
 - false broad cases documented and accepted;
 - structured warnings that match expectations;
 - `where-to-edit` still returning `insufficient_evidence`.
+
+Passing Phase 2B eval does not make the kernel ready for confident localization. Top-level symbols are source facts, not edit candidates.

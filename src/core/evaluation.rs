@@ -2,18 +2,23 @@ use crate::core::repo_graph::{
     analyze_impact, inspect_repo, DetectionCategory, DetectionIssue, Evidence, ImpactConfidence,
     ImpactReport, ImpactScope, ImpactStatus, RepoInspection,
 };
+use crate::core::symbol_graph::{
+    build_symbol_graph, symbol_graph_evidence_valid, SourceSymbol, SymbolGraph, SymbolKind,
+    SymbolWarning, SymbolWarningCategory,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-pub const EVAL_CONTRACT_VERSION: &str = "0.1";
+pub const EVAL_CONTRACT_VERSION: &str = "0.2";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EvalCaseKind {
     Inspect,
     Impact,
+    Symbols,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,7 +53,24 @@ pub struct EvalExpect {
     pub forbidden_commands_contains: Vec<String>,
     #[serde(default)]
     pub forbidden_tests_contains: Vec<String>,
+    #[serde(default)]
+    pub source_files_contains: Vec<String>,
+    #[serde(default)]
+    pub source_files_not_contains: Vec<String>,
+    #[serde(default)]
+    pub symbols_contains: Vec<ExpectedSymbol>,
+    #[serde(default)]
+    pub symbols_not_contains: Vec<ExpectedSymbol>,
     pub max_impacted_components: Option<usize>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExpectedSymbol {
+    pub name: String,
+    #[serde(default)]
+    pub kind: Option<SymbolKind>,
+    #[serde(default)]
+    pub path: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -59,6 +81,7 @@ pub struct EvaluationReport {
     pub failed_cases: usize,
     pub inspect_cases: usize,
     pub impact_cases: usize,
+    pub symbol_cases: usize,
     pub metrics: EvalMetrics,
     pub cases: Vec<EvalCaseResult>,
     pub failures: Vec<EvalFailure>,
@@ -146,11 +169,13 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
     let mut all_failures = Vec::new();
     let mut inspect_cases = 0;
     let mut impact_cases = 0;
+    let mut symbol_cases = 0;
 
     for case in cases {
         match case.kind {
             EvalCaseKind::Inspect => inspect_cases += 1,
             EvalCaseKind::Impact => impact_cases += 1,
+            EvalCaseKind::Symbols => symbol_cases += 1,
         }
 
         let result = evaluate_case(&case, &mut counters);
@@ -168,6 +193,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
         failed_cases: total_cases.saturating_sub(passed_cases),
         inspect_cases,
         impact_cases,
+        symbol_cases,
         metrics: EvalMetrics {
             evidence_coverage_pass_rate: rate(counters.evidence_passed, counters.evidence_cases),
             expected_fact_recall: rate(counters.expected_checks_passed, counters.expected_checks),
@@ -204,6 +230,13 @@ fn evaluate_case(case: &EvalCase, counters: &mut EvalCounters) -> EvalCaseResult
             check_impact_evidence(case, &first, counters, &mut failures);
             check_impact_expectations(case, &first, counters, &mut failures);
         }
+        EvalCaseKind::Symbols => {
+            let first = build_symbol_graph(&case.fixture);
+            let second = build_symbol_graph(&case.fixture);
+            check_deterministic(case, first == second, counters, &mut failures);
+            check_symbols_evidence(case, &first, counters, &mut failures);
+            check_symbols_expectations(case, &first, counters, &mut failures);
+        }
     }
 
     EvalCaseResult {
@@ -212,6 +245,55 @@ fn evaluate_case(case: &EvalCase, counters: &mut EvalCounters) -> EvalCaseResult
         passed: failures.is_empty(),
         failures,
     }
+}
+
+fn check_symbols_expectations(
+    case: &EvalCase,
+    graph: &SymbolGraph,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    let source_files = graph
+        .source_files
+        .iter()
+        .map(|source_file| source_file.path.as_str())
+        .collect::<Vec<_>>();
+    let warning_categories = symbol_warning_categories(&graph.warnings);
+
+    check_contains_all(
+        case,
+        "source_files_contains",
+        &case.expect.source_files_contains,
+        &source_files,
+        "false_narrow",
+        counters,
+        failures,
+    );
+    check_forbidden(
+        case,
+        "source_files_not_contains",
+        &case.expect.source_files_not_contains,
+        &source_files,
+        counters,
+        failures,
+    );
+    check_symbol_contains_all(
+        case,
+        "symbols_contains",
+        &case.expect.symbols_contains,
+        &graph.symbols,
+        counters,
+        failures,
+    );
+    check_symbol_forbidden(
+        case,
+        "symbols_not_contains",
+        &case.expect.symbols_not_contains,
+        &graph.symbols,
+        counters,
+        failures,
+    );
+    check_warning_expectations(case, &warning_categories, counters, failures);
 }
 
 fn check_inspect_expectations(
@@ -480,6 +562,92 @@ fn check_forbidden(
     }
 }
 
+fn check_symbol_contains_all(
+    case: &EvalCase,
+    field: &str,
+    expected: &[ExpectedSymbol],
+    actual: &[SourceSymbol],
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    for expected_item in expected {
+        let passed = actual
+            .iter()
+            .any(|actual_item| symbol_matches(actual_item, expected_item));
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_narrow_count += 1;
+            failures.push(failure(
+                case,
+                field,
+                format_expected_symbol(expected_item),
+                format_actual_symbols(actual),
+                "false_narrow",
+            ));
+        }
+    }
+}
+
+fn check_symbol_forbidden(
+    case: &EvalCase,
+    field: &str,
+    forbidden: &[ExpectedSymbol],
+    actual: &[SourceSymbol],
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    for forbidden_item in forbidden {
+        let passed = !actual
+            .iter()
+            .any(|actual_item| symbol_matches(actual_item, forbidden_item));
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_broad_count += 1;
+            failures.push(failure(
+                case,
+                field,
+                format!("not {}", format_expected_symbol(forbidden_item)),
+                format_actual_symbols(actual),
+                "false_broad",
+            ));
+        }
+    }
+}
+
+fn symbol_matches(actual: &SourceSymbol, expected: &ExpectedSymbol) -> bool {
+    actual.name == expected.name
+        && expected
+            .kind
+            .as_ref()
+            .is_none_or(|kind| &actual.kind == kind)
+        && expected
+            .path
+            .as_deref()
+            .is_none_or(|path| actual.path == path)
+}
+
+fn format_expected_symbol(expected: &ExpectedSymbol) -> String {
+    let kind = expected
+        .kind
+        .as_ref()
+        .map(|kind| format!("{kind:?}"))
+        .unwrap_or_else(|| "*".to_string());
+    let path = expected.path.as_deref().unwrap_or("*");
+    format!("{kind}:{}@{path}", expected.name)
+}
+
+fn format_actual_symbols(actual: &[SourceSymbol]) -> String {
+    actual
+        .iter()
+        .map(|symbol| format!("{:?}:{}@{}", symbol.kind, symbol.name, symbol.path))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 fn check_warning_expectations(
     case: &EvalCase,
     actual_categories: &BTreeSet<String>,
@@ -598,6 +766,26 @@ fn check_impact_evidence(
     }
 }
 
+fn check_symbols_evidence(
+    case: &EvalCase,
+    graph: &SymbolGraph,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    counters.evidence_cases += 1;
+    if symbol_graph_evidence_valid(graph) {
+        counters.evidence_passed += 1;
+    } else {
+        failures.push(failure(
+            case,
+            "evidence_coverage",
+            "all source files and symbols have valid evidence".to_string(),
+            "missing or invalid evidence reference".to_string(),
+            "evidence_coverage",
+        ));
+    }
+}
+
 fn inspect_evidence_valid(graph: &RepoInspection) -> bool {
     let evidence_ids = evidence_ids(&graph.evidence);
 
@@ -681,6 +869,13 @@ fn warning_categories(warnings: &[DetectionIssue]) -> BTreeSet<String> {
         .collect()
 }
 
+fn symbol_warning_categories(warnings: &[SymbolWarning]) -> BTreeSet<String> {
+    warnings
+        .iter()
+        .map(|warning| symbol_category_name(&warning.category).to_string())
+        .collect()
+}
+
 fn category_name(category: &DetectionCategory) -> &'static str {
     match category {
         DetectionCategory::AmbiguousDetection => "ambiguous_detection",
@@ -693,6 +888,15 @@ fn category_name(category: &DetectionCategory) -> &'static str {
         DetectionCategory::UnmappedChange => "unmapped_change",
         DetectionCategory::UnreadableManifest => "unreadable_manifest",
         DetectionCategory::UnsupportedPattern => "unsupported_pattern",
+    }
+}
+
+fn symbol_category_name(category: &SymbolWarningCategory) -> &'static str {
+    match category {
+        SymbolWarningCategory::IgnoredPath => "ignored_path",
+        SymbolWarningCategory::ParseError => "parse_error",
+        SymbolWarningCategory::SymlinkIgnored => "symlink_ignored",
+        SymbolWarningCategory::UnreadableSource => "unreadable_source",
     }
 }
 

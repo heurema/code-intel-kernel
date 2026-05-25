@@ -6,6 +6,8 @@ The `symbols` command returns source-level facts for Rust source files. It is in
 
 It does not perform edit localization, call graph analysis, reference resolution, import/export resolution, LSP diagnostics, SQLite persistence, MCP serving, or embeddings.
 
+Phase 2B adds fixture evaluation for this contract through `eval-fixtures`, but does not change the `symbols` contract version.
+
 ## Command
 
 ```bash
@@ -147,3 +149,16 @@ Symlinks are not followed.
 - MCP tools.
 - Edit localization.
 - `where-to-edit` candidates.
+
+## Evaluation
+
+SymbolGraph-lite eval cases use semantic assertions over:
+
+- source files;
+- symbol name/kind/path matches;
+- forbidden nested or ignored symbols;
+- parse warning categories;
+- evidence coverage;
+- deterministic output.
+
+The eval harness report uses `eval_contract_version = "0.2"` because it now includes `symbol_cases`. The `symbols` JSON contract remains `0.1`.

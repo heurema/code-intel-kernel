@@ -1,6 +1,6 @@
 # Phase 2A SymbolGraph-lite Plan
 
-Status: draft plan only. Do not implement in Phase 1G.
+Status: completed as Phase 2A, then extended by Phase 2B eval coverage.
 
 ## Goal
 
@@ -8,7 +8,7 @@ Add the first source-level graph layer without disturbing the stable RepoGraph i
 
 Phase 2A should prove that source facts can be extracted deterministically and with evidence before using them for edit localization.
 
-The previous public SymbolGraph placeholder has been removed from the library exports. Phase 2A should introduce a real internal model rather than extending the old stub.
+The previous public SymbolGraph placeholder was removed before Phase 2A. Phase 2A introduced a real SymbolGraph-lite model and `symbols` CLI contract.
 
 ## Scope
 
@@ -17,8 +17,8 @@ Preferred narrow path:
 - start with Rust source files because the repository itself is Rust;
 - discover source files from RepoGraph component `file_patterns` and repository traversal;
 - extract top-level symbols only;
-- expose an internal API, not a public MCP server;
-- add SymbolGraph fixture eval cases.
+- expose an internal API and `symbols` CLI, not a public MCP server;
+- add SymbolGraph fixture eval cases in Phase 2B.
 
 If Rust parsing is too large for the first slice, use a language-agnostic source-file graph with a symbol stub, but keep the same evidence rules.
 
@@ -28,9 +28,9 @@ Suggested minimal model:
 
 - `SymbolGraph`
 - `SourceFile`
-- `Symbol`
+- `SourceSymbol`
 - `SymbolKind`
-- `SymbolEvidence`
+- source evidence records;
 - `SymbolWarning`
 
 Initial symbol kinds:
@@ -39,9 +39,11 @@ Initial symbol kinds:
 - `struct`
 - `enum`
 - `trait`
-- `impl`
+- `type_alias`
+- `const`
+- `static`
+- `impl_block`
 - `module`
-- `unknown`
 
 ## Extraction Rules
 
@@ -86,4 +88,4 @@ Initial symbol kinds:
 
 Do not change `inspect`, `impact`, or `eval` contract versions for internal SymbolGraph work unless their JSON output shape changes.
 
-If a public SymbolGraph JSON output is added later, give it its own contract version.
+The public `symbols` JSON output uses its own contract version: `0.1`.

@@ -6,7 +6,7 @@ pub struct TreeSitterExtractor {
 
 pub fn create_tree_sitter_extractor() -> TreeSitterExtractor {
     TreeSitterExtractor {
-        languages: vec!["typescript", "tsx", "javascript", "python"],
-        status: "placeholder",
+        languages: vec!["rust"],
+        status: "implemented in SymbolGraph-lite for top-level Rust facts",
     }
 }

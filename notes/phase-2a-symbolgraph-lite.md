@@ -48,7 +48,7 @@ SymbolGraph-lite does not extract:
 
 - `inspect`: `0.2`
 - `impact`: `0.2`
-- `eval`: `0.1`
+- `eval`: `0.2` after Phase 2B
 - `symbols`: `0.1`
 
 ## Current Limitations
@@ -57,7 +57,7 @@ SymbolGraph-lite does not extract:
 - Top-level declarations only.
 - Parse errors suppress symbol extraction for the affected file.
 - Symlinks are ignored rather than followed.
-- No SymbolGraph eval harness integration yet; Phase 2A uses direct tests.
+- SymbolGraph eval harness integration was added in Phase 2B.
 - `where-to-edit` remains `insufficient_evidence`.
 
 ## Phase 2B Recommendation

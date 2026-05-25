@@ -87,7 +87,7 @@ The current implementation is a **read-only, structural-first kernel** with a st
 
 1. `inspect`: evidence-backed repository/build/test facts.
 2. `impact`: conservative RepoGraph-only impact from changed files.
-3. `eval-fixtures`: fixture-based quality gate for inspect and impact.
+3. `eval-fixtures`: fixture-based quality gate for inspect, impact, and symbols.
 4. `symbols`: evidence-backed Rust top-level source facts.
 5. `where-to-edit`: still returns `insufficient_evidence` until evaluated localization evidence exists.
 

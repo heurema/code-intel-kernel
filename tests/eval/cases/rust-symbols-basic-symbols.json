@@ -1,0 +1,25 @@
+{
+  "name": "rust_symbols_basic_symbols",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "symbols",
+  "expect": {
+    "source_files_contains": ["src/lib.rs"],
+    "symbols_contains": [
+      { "name": "top_level_function", "kind": "function" },
+      { "name": "Widget", "kind": "struct" },
+      { "name": "Mode", "kind": "enum" },
+      { "name": "Runner", "kind": "trait" },
+      { "name": "WidgetId", "kind": "type_alias" },
+      { "name": "DEFAULT_LIMIT", "kind": "const" },
+      { "name": "GLOBAL_LIMIT", "kind": "static" },
+      { "name": "nested", "kind": "module" },
+      { "name": "impl@26:0", "kind": "impl_block" }
+    ],
+    "symbols_not_contains": [
+      { "name": "nested_helper", "kind": "function" },
+      { "name": "new", "kind": "function" },
+      { "name": "child", "kind": "function" }
+    ],
+    "warnings_not_contains_categories": ["parse_error"]
+  }
+}

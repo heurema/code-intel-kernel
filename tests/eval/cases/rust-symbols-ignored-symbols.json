@@ -1,0 +1,20 @@
+{
+  "name": "rust_symbols_ignored_paths",
+  "fixture": "tests/fixtures/rust-symbols-ignored",
+  "kind": "symbols",
+  "expect": {
+    "source_files_contains": ["src/lib.rs"],
+    "source_files_not_contains": [
+      "target/generated.rs",
+      "node_modules/generated.rs"
+    ],
+    "symbols_contains": [
+      { "name": "visible", "kind": "function" }
+    ],
+    "symbols_not_contains": [
+      { "name": "ignored_target_symbol", "kind": "function" },
+      { "name": "ignored_node_symbol", "kind": "function" }
+    ],
+    "warnings_not_contains_categories": ["parse_error"]
+  }
+}

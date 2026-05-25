@@ -85,13 +85,26 @@
 - Add SymbolGraph eval cases before using symbols for localization.
 - Do not add call graph, LSP, SQLite, MCP, embeddings, or confident `where-to-edit` yet.
 
-## Phase 2B: Source-level evidence bundles
+## Phase 2B: SymbolGraph eval and SourceEvidenceBundle contract
 
-- Use evaluated SymbolGraph-lite facts to enrich EvidenceBundle output.
-- Consider adding SymbolGraph-lite cases to the eval harness before using symbols for any recommendations.
-- Keep localization conservative and evidence-backed.
+- Add SymbolGraph-lite cases to the fixture eval harness.
+- Bump eval contract only if eval report shape changes.
+- Document SourceEvidenceBundle as a future source-level evidence packet.
 - Keep RepoGraph commands/tests as the build/test validation source.
-- Only consider `where-to-edit` candidates after symbol extraction quality is measured.
+- Keep `where-to-edit` as `insufficient_evidence`.
+
+## Phase 2C: SourceEvidenceBundle prototype
+
+- Prototype SourceEvidenceBundle generation without edit localization.
+- Combine query, SymbolGraph-lite facts, and RepoGraph context only where evidence supports it.
+- Return `partial` or `insufficient_evidence` when query-to-symbol relevance is missing.
+- Keep candidate files/symbols as context, not edit instructions.
+
+## Phase 2D: Symbol-to-repo context linking
+
+- Link source files/symbols to RepoGraph components by path evidence.
+- Add fixture eval for source-to-component relationships.
+- Still avoid confident `where-to-edit` until localization has dedicated negative eval cases.
 
 ## Phase 3: LSP diagnostics bridge
 

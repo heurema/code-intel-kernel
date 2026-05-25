@@ -857,12 +857,16 @@ fn symbols_cli_output_is_valid_json() {
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
-    assert!(cases.len() >= 17);
+    assert!(cases.len() >= 20);
     assert!(cases
         .iter()
         .any(|case| case.name == "cargo_workspace_dependency_impact"));
+    assert!(cases
+        .iter()
+        .any(|case| case.name == "rust_symbols_basic_symbols"));
     assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Inspect));
     assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Impact));
+    assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Symbols));
 }
 
 #[test]
@@ -872,12 +876,14 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
 
     assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
     assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
-    assert!(report.total_cases >= 17);
+    assert!(report.total_cases >= 20);
     assert!(report.inspect_cases > 0);
     assert!(report.impact_cases > 0);
+    assert!(report.symbol_cases > 0);
     assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
     assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
     assert!(json.get("metrics").is_some());
+    assert!(json.get("symbol_cases").is_some());
 }
 
 #[test]
@@ -898,6 +904,7 @@ fn eval_fixtures_cli_output_is_valid_json() {
         serde_json::from_slice(&output.stdout).expect("eval-fixtures output should be JSON");
     assert_eq!(json["eval_contract_version"], EVAL_CONTRACT_VERSION);
     assert_eq!(json["failed_cases"], 0);
+    assert!(json["symbol_cases"].as_u64().is_some_and(|count| count > 0));
     assert!(json.get("metrics").is_some());
 }
 
@@ -909,6 +916,37 @@ fn evaluator_report_detects_evidence_and_deterministic_checks() {
     assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
     assert_eq!(report.metrics.false_narrow_count, 0);
     assert_eq!(report.metrics.false_broad_count, 0);
+}
+
+#[test]
+fn symbol_eval_cases_cover_parse_warning_and_ignored_paths() {
+    let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
+
+    for case_name in [
+        "rust_symbols_basic_symbols",
+        "rust_symbols_malformed_warning",
+        "rust_symbols_ignored_paths",
+    ] {
+        let result = report
+            .cases
+            .iter()
+            .find(|case| case.name == case_name)
+            .expect("symbol eval case should be present");
+        assert!(result.passed, "{case_name} failed: {:?}", result.failures);
+        assert_eq!(result.kind, EvalCaseKind::Symbols);
+    }
+}
+
+#[test]
+fn source_evidence_bundle_contract_docs_exist() {
+    let contract = std::fs::read_to_string("docs/source-evidence-bundle.md")
+        .expect("SourceEvidenceBundle contract should exist");
+    let checklist = std::fs::read_to_string("docs/localization-readiness-checklist.md")
+        .expect("localization readiness checklist should exist");
+
+    assert!(contract.contains("contract_version"));
+    assert!(contract.contains("SourceEvidenceBundle"));
+    assert!(checklist.contains("not_ready_for_confident_localization"));
 }
 
 #[test]
