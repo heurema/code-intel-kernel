@@ -1,6 +1,6 @@
 # Localization Readiness Checklist
 
-Status: Phase 3A LSP bridge design gate. Current conclusion: `not_ready_for_confident_localization`.
+Status: Phase 3B-A LSP diagnostics gate. Current conclusion: `not_ready_for_confident_localization`.
 
 This checklist defines what must be true before `where-to-edit` can return confident file or symbol candidates.
 
@@ -80,6 +80,9 @@ This checklist defines what must be true before `where-to-edit` can return confi
   Evidence: `docs/lsp-capability-matrix.md`; references are Phase 3B candidate, call hierarchy and import/export semantics remain deferred.
 - [x] LSP diagnostics bridge decision is made.
   Evidence: `docs/lsp-bridge-design.md`; Phase 3A is design-only and Phase 3B is a narrow read-only Rust candidate.
+
+- [x] Rust LSP diagnostics unavailable path is implemented and tested.
+  Evidence: `docs/lsp-diagnostics-json-contract.md`; smoke test `lsp_diagnostics_unavailable_when_rust_analyzer_is_missing`.
 - [x] Negative localization fixtures prove no false confident candidate behavior.
   Evidence: Phase 2G adversarial eval cases plus `where-to-edit` refusal tests.
 - [x] Source context/snippet policy is defined for explicit selectors.
@@ -88,7 +91,9 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 ## LSP Blockers Before Localization
 
-- [ ] LSP diagnostics layer is implemented and evaluated.
+- [x] LSP diagnostics layer has a first read-only runtime slice.
+  Evidence: `lsp-diagnostics` CLI and `docs/lsp-diagnostics-json-contract.md`.
+- [ ] LSP diagnostics layer has fixture/adversarial eval coverage.
 - [ ] LSP reference layer is implemented and evaluated.
 - [ ] Definition disambiguation is implemented and evaluated.
 - [ ] Semantic type/hover evidence is evaluated or explicitly deferred.
@@ -101,4 +106,4 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 `not_ready_for_confident_localization`
 
-Phase 3A designs the LSP diagnostics/reference bridge but does not implement it. The kernel still uses deterministic string/token matching, top-level symbols, explicit selectors, and read-only source slices. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.
+Phase 3B-A adds read-only Rust diagnostics, but diagnostics alone are not enough to decide edit locations. The kernel still lacks references, definitions, semantic disambiguation, and localization-specific eval. `where-to-edit` must remain `insufficient_evidence`.

@@ -1,7 +1,8 @@
 use code_intel_kernel::{
     analyze_impact, build_source_context_report, build_source_evidence_bundle, build_symbol_graph,
-    create_evidence_bundle, inspect_repo, run_fixture_evaluation, EvidenceRequest, KernelProfile,
-    LineRange, SourceContextSelector,
+    collect_rust_lsp_diagnostics_with_options, create_evidence_bundle, inspect_repo,
+    run_fixture_evaluation, EvidenceRequest, KernelProfile, LineRange, LspDiagnosticsOptions,
+    SourceContextSelector,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -51,6 +52,12 @@ fn run(args: Vec<String>) -> i32 {
         Some("source-context") => {
             let (repo_path, selectors) = parse_source_context_args(&args[1..]);
             let report = build_source_context_report(repo_path, selectors);
+            print_json(&report);
+            0
+        }
+        Some("lsp-diagnostics") => {
+            let (repo_path, files, options) = parse_lsp_diagnostics_args(&args[1..]);
+            let report = collect_rust_lsp_diagnostics_with_options(repo_path, files, options);
             print_json(&report);
             0
         }
@@ -252,6 +259,77 @@ fn parse_source_context_args(args: &[String]) -> (&str, Vec<SourceContextSelecto
     (repo_path, selectors)
 }
 
+fn parse_lsp_diagnostics_args(args: &[String]) -> (&str, Vec<String>, LspDiagnosticsOptions) {
+    let mut repo_path = ".";
+    let mut files = Vec::new();
+    let mut options = LspDiagnosticsOptions::default();
+    let mut args_iter = args.iter();
+
+    while let Some(arg) = args_iter.next() {
+        if arg == "--json" {
+            continue;
+        }
+
+        if arg == "--repo" {
+            if let Some(value) = args_iter.next() {
+                repo_path = value;
+            }
+            continue;
+        }
+
+        if let Some(value) = arg.strip_prefix("--repo=") {
+            repo_path = value;
+            continue;
+        }
+
+        if arg == "--file" {
+            if let Some(value) = args_iter.next() {
+                files.push(value.to_string());
+            }
+            continue;
+        }
+
+        if let Some(value) = arg.strip_prefix("--file=") {
+            files.push(value.to_string());
+            continue;
+        }
+
+        if arg == "--timeout-ms" {
+            if let Some(value) = args_iter.next() {
+                if let Ok(timeout_ms) = value.parse::<u64>() {
+                    options.timeout_ms = timeout_ms;
+                }
+            }
+            continue;
+        }
+
+        if let Some(value) = arg.strip_prefix("--timeout-ms=") {
+            if let Ok(timeout_ms) = value.parse::<u64>() {
+                options.timeout_ms = timeout_ms;
+            }
+            continue;
+        }
+
+        if arg == "--max-diagnostics" {
+            if let Some(value) = args_iter.next() {
+                if let Ok(max_diagnostics) = value.parse::<usize>() {
+                    options.max_diagnostics = max_diagnostics;
+                }
+            }
+            continue;
+        }
+
+        if let Some(value) = arg.strip_prefix("--max-diagnostics=") {
+            if let Ok(max_diagnostics) = value.parse::<usize>() {
+                options.max_diagnostics = max_diagnostics;
+            }
+            continue;
+        }
+    }
+
+    (repo_path, files, options)
+}
+
 fn parse_line_range(value: &str) -> Option<LineRange> {
     let (start, end) = value.split_once(':')?;
     let start_line = start.trim().parse::<usize>().ok()?;
@@ -273,7 +351,7 @@ fn split_changed_files(value: &str) -> Vec<String> {
 
 fn print_help() {
     println!(
-        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel symbols <repo-path> [--json]\n  code-intel source-evidence \"<query>\" [--repo <repo-path>] [--json]\n  code-intel source-context --file src/lib.rs [--lines 1:80] [--repo <repo-path>] [--json]\n  code-intel source-context --symbol-id <symbol-id> [--repo <repo-path>] [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nRepoGraph impact is repository/build/test-level only. SymbolGraph-lite extracts top-level Rust source facts only. SourceEvidenceBundle is evidence assembly only. SourceContext returns explicit read-only source slices only. LSP, SQLite, MCP, ProcessReward, call graph, references, and edit localization are intentionally deferred."
+        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel symbols <repo-path> [--json]\n  code-intel source-evidence \"<query>\" [--repo <repo-path>] [--json]\n  code-intel source-context --file src/lib.rs [--lines 1:80] [--repo <repo-path>] [--json]\n  code-intel source-context --symbol-id <symbol-id> [--repo <repo-path>] [--json]\n  code-intel lsp-diagnostics --file src/lib.rs [--repo <repo-path>] [--timeout-ms 1500] [--max-diagnostics 100] [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nRepoGraph impact is repository/build/test-level only. SymbolGraph-lite extracts top-level Rust source facts only. SourceEvidenceBundle is evidence assembly only. SourceContext returns explicit read-only source slices only. LSP diagnostics are read-only evidence only. SQLite, MCP, ProcessReward, call graph, references, and edit localization are intentionally deferred."
     );
 }
 

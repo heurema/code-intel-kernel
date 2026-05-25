@@ -1,5 +1,6 @@
 pub mod evaluation;
 pub mod evidence;
+pub mod lsp_bridge;
 pub mod memory;
 pub mod process_reward;
 pub mod repo_graph;

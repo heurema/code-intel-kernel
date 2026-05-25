@@ -11,6 +11,12 @@ pub use crate::core::evidence::{
     create_evidence_bundle, EvidenceBundle, EvidenceCommand, EvidenceFile, EvidenceRequest,
     KernelProfile,
 };
+pub use crate::core::lsp_bridge::{
+    collect_rust_lsp_diagnostics, collect_rust_lsp_diagnostics_with_options,
+    lsp_diagnostics_evidence_valid, LspAvailabilityStatus, LspDiagnostic, LspDiagnosticSeverity,
+    LspDiagnosticsOptions, LspDiagnosticsReport, LspEvidence, LspRange, LspRequestInfo,
+    LspServerInfo, LspWarning, LspWarningCategory, LSP_DIAGNOSTICS_CONTRACT_VERSION,
+};
 pub use crate::core::memory::{create_session_event, AgentEvent, AgentEventType};
 pub use crate::core::process_reward::{score_process_reward, ProcessReward, ProcessRewardInput};
 pub use crate::core::repo_graph::{

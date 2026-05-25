@@ -1,12 +1,12 @@
 # LSP Process Safety
 
-Status: Phase 3A design draft. Not implemented.
+Status: Phase 3A design draft, partially implemented by Phase 3B-A diagnostics.
 
 Language servers are external processes. The kernel should treat them as read-only, bounded, and potentially unavailable.
 
 ## Process Lifecycle
 
-Phase 3B should define a minimal lifecycle:
+Phase 3B-A defines a minimal lifecycle for diagnostics:
 
 - discover server binary;
 - report `unavailable` if missing;
@@ -34,7 +34,7 @@ Ignored path rules should align with RepoGraph, SymbolGraph-lite, and SourceCont
 
 ## Request Limits
 
-Phase 3B should define conservative defaults:
+Phase 3B-A defines conservative defaults:
 
 - max files opened;
 - max diagnostics per report;

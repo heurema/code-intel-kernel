@@ -145,13 +145,18 @@
 - Keep SQLite, MCP, embeddings, mutation tools, and confident `where-to-edit` deferred.
 - Produce capability matrix, draft JSON contracts, process safety model, integration boundaries, and Phase 3B plan.
 
-## Phase 3B: LSP diagnostics bridge implementation candidate
+## Phase 3B-A: Rust LSP diagnostics bridge
 
-- Start with one language/server only after Phase 3A design is accepted.
-- Capture diagnostics snapshots without mutating code.
-- Keep before/after deltas in memory until storage is justified.
-- Add more languages only after one bridge is stable.
-- Recommended first candidate: Rust + `rust-analyzer`, read-only diagnostics/definitions/references, structured `unavailable` if the server is missing.
+- Implement Rust + `rust-analyzer` diagnostics only.
+- Return structured `unavailable` if rust-analyzer is missing.
+- Keep tests independent from local rust-analyzer availability.
+- Keep definitions, references, hover/type info, call hierarchy, formatting, code actions, rename, SQLite, MCP, and `where-to-edit` integration deferred.
+
+## Phase 3B-B: Read-only definitions/references candidate
+
+- Add definitions/references only after diagnostics unavailable/safety paths are stable.
+- Use explicit file/position or symbol selectors only.
+- Keep SourceEvidence integration deferred until evidence quality is evaluated.
 
 ## Phase 3C: LSP eval/adversarial gate
 

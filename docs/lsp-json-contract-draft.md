@@ -1,6 +1,6 @@
 # LSP JSON Contract Draft
 
-Status: Phase 3A draft only. Not implemented and not part of runtime CLI output.
+Status: Phase 3A draft family. `lsp_diagnostics` has a Phase 3B-A runtime contract in `docs/lsp-diagnostics-json-contract.md`; the other contracts remain draft-only and are not part of runtime CLI output.
 
 All LSP contract versions in this document use `draft-0.1`.
 
@@ -52,6 +52,8 @@ No LSP result should be emitted without evidence.
 ## lsp_diagnostics
 
 Purpose: collect bounded diagnostics for explicit files or a workspace.
+
+Runtime status: implemented as `lsp_diagnostics` version `0.1`. See `docs/lsp-diagnostics-json-contract.md`.
 
 ```json
 {

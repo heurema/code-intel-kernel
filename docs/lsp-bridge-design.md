@@ -1,8 +1,8 @@
 # LSP Bridge Design
 
-Status: Phase 3A design draft. Not implemented.
+Status: Phase 3A design draft, extended by Phase 3B-A diagnostics runtime.
 
-Phase 3A designs a read-only LSP diagnostics/reference bridge. It does not add LSP dependencies, spawn language servers, add SQLite, expose MCP, or change `where-to-edit`.
+Phase 3A designs a read-only LSP diagnostics/reference bridge. Phase 3B-A implements the first runtime slice: Rust diagnostics only. It does not add SQLite, expose MCP, or change `where-to-edit`.
 
 ## Motivation
 
@@ -146,11 +146,20 @@ Phase 3A:
 - no runtime changes;
 - no dependency changes.
 
-Phase 3B candidate:
+Phase 3B-A implemented slice:
 
 - Rust only;
 - `rust-analyzer` only;
-- read-only diagnostics and references for explicit selectors;
+- read-only diagnostics;
+- structured `unavailable` when the server is absent;
+- no definitions or references yet;
+- no SQLite, MCP, mutation, or `where-to-edit` integration.
+
+Phase 3B-B candidate:
+
+- Rust only;
+- `rust-analyzer` only;
+- read-only definitions and references for explicit selectors;
 - structured `unavailable` when the server is absent;
 - no SQLite, MCP, mutation, or `where-to-edit` integration.
 
