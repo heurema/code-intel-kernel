@@ -1,10 +1,10 @@
 # Source Evidence JSON Contract
 
-Status: Phase 2D prototype contract, version `0.2`.
+Status: Phase 2F prototype contract, version `0.3`.
 
 `source-evidence` assembles evidence from RepoGraph and SymbolGraph-lite for a query. It is read-only and does not identify edit locations.
 
-Phase 2E adds `source-context` as a separate explicit-selector slicing layer. `source-evidence` output does not include snippets by default.
+Phase 2E adds `source-context` as a separate explicit-selector slicing layer. Phase 2F adds explicit SourceContext selector hints to `source-evidence`. `source-evidence` output does not include snippets by default.
 
 ## Command
 
@@ -22,12 +22,13 @@ cargo run --quiet -- source-evidence "top_level_function" --repo tests/fixtures/
 
 ```json
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "status": "ok | partial | insufficient_evidence",
   "query": "...",
   "confidence": "high | medium | low | insufficient",
   "candidate_files": [],
   "candidate_symbols": [],
+  "source_context_selectors": [],
   "repo_context": [],
   "source_evidence": [],
   "warnings": [],
@@ -45,6 +46,7 @@ Allowed statements:
 
 - a source file is an evidence candidate;
 - a top-level source symbol is an evidence candidate;
+- an explicit source-context selector can retrieve read-only context for a candidate;
 - a RepoGraph component, command, or test may provide context;
 - evidence is insufficient for localization.
 
@@ -57,7 +59,7 @@ Forbidden statements:
 
 ## Matching Strategy
 
-Phase 2D uses deterministic local matching only:
+Phase 2F uses deterministic local matching only:
 
 - case-insensitive substring match on source file paths and symbol names;
 - token overlap between query terms and file/symbol names;
@@ -92,6 +94,32 @@ Each candidate symbol has:
 - `evidence_ids`
 
 Only Rust top-level SymbolGraph-lite facts are available in Phase 2D.
+
+## source_context_selectors
+
+Selector hints are explicit handles for `source-context`.
+
+Current selector kinds:
+
+- `file`
+- `file_range`
+- `symbol_id`
+
+Each selector hint includes:
+
+- `selector_id`
+- `selector_kind`
+- `file_path`
+- `symbol_id`, `symbol_name`, and `symbol_kind` when available
+- `start_line` and `end_line` when available
+- `reason`
+- `confidence`
+- `evidence_ids`
+- `limitations`
+
+Selector hints are generated only from evidence-backed `candidate_files` and `candidate_symbols`. They are not edit targets and do not include source text.
+
+Current max selector hints: 12.
 
 ## repo_context
 
@@ -131,6 +159,7 @@ Known categories:
 - `parse_error_present`
 - `query_too_broad`
 - `repo_graph_context_unavailable`
+- `selector_hint_limit_exceeded`
 - `symbol_graph_parse_warning`
 - `unsupported_language`
 
@@ -155,7 +184,7 @@ Missing evidence is first-class output. It should not be converted into guesses.
 
 ## Contract Versions
 
-- `source_evidence`: `0.2`
+- `source_evidence`: `0.3`
 - `source_context`: `0.1`
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`
@@ -169,8 +198,9 @@ Phase 2D caps output deterministically:
 - max candidate files: 8
 - max candidate symbols: 12
 - max repo context items: 12
+- max source context selector hints: 12
 
-When a limit is exceeded, output is truncated after deterministic ranking and includes `candidate_limit_exceeded`.
+When a candidate/context limit is exceeded, output is truncated after deterministic ranking and includes `candidate_limit_exceeded`. When selector hints are capped, output includes `selector_hint_limit_exceeded`.
 
 ## Ranking
 

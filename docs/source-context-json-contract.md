@@ -4,6 +4,8 @@ Status: Phase 2E prototype contract, version `0.1`.
 
 `source-context` returns bounded, read-only source snippets for explicit selectors. It is not natural-language localization and does not identify edit targets.
 
+Phase 2F allows `source-evidence` to emit selector hints that can be passed manually to `source-context`. `source-context` itself remains explicit-selector only.
+
 ## Commands
 
 ```bash
@@ -36,6 +38,11 @@ Supported selectors are explicit only:
 - `symbol_id`: deterministic SymbolGraph-lite symbol ID.
 
 No natural-language query selection is supported.
+
+SourceEvidence selector hints map to these existing selectors:
+
+- `selector_kind = "file"` -> `source-context --file <file_path>`
+- `selector_kind = "symbol_id"` -> `source-context --symbol-id <symbol_id>`
 
 ## Slice Shape
 
@@ -111,7 +118,7 @@ It does not use LSP, SQLite, MCP, embeddings, call graph, references, or import/
 ## Contract Versions
 
 - `source_context`: `0.1`
-- `source_evidence`: unchanged, `0.2`
+- `source_evidence`: `0.3` after Phase 2F selector hints
 - `symbols`: unchanged, `0.1`
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`

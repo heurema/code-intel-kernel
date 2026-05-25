@@ -10,6 +10,10 @@
     "candidate_symbols_contains": [
       { "name": "top_level_function", "kind": "function", "path": "src/lib.rs" }
     ],
+    "selector_hints_contains": ["src/lib.rs"],
+    "selector_hint_symbols_contains": [
+      { "name": "top_level_function", "kind": "function", "path": "src/lib.rs" }
+    ],
     "repo_context_contains": ["rust-symbols-basic", "cargo test"],
     "repo_context_roles_contains": [
       "containing_component",

@@ -6,8 +6,9 @@ use code_intel_kernel::{
     DetectionCategory, DetectionSeverity, EvalCase, EvalCaseKind, EvalExpect, EvidenceRequest,
     ImpactConfidence, ImpactKind, ImpactReport, ImpactScope, ImpactStatus, KernelProfile,
     LineRange, ParseStatus, RelationshipKind, RepoContextRole, RepoInspection, SourceContextReport,
-    SourceContextSelector, SourceContextStatus, SourceContextWarningCategory, SourceEvidenceBundle,
-    SymbolGraph, SymbolKind, SymbolWarningCategory, EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION,
+    SourceContextSelector, SourceContextSelectorKind, SourceContextStatus,
+    SourceContextWarningCategory, SourceEvidenceBundle, SymbolGraph, SymbolKind,
+    SymbolWarningCategory, EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION,
     INSPECT_CONTRACT_VERSION, SOURCE_CONTEXT_CONTRACT_VERSION, SOURCE_EVIDENCE_CONTRACT_VERSION,
     SYMBOLS_CONTRACT_VERSION,
 };
@@ -875,6 +876,12 @@ fn source_evidence_exact_symbol_returns_evidence_candidate() {
         .candidate_files
         .iter()
         .any(|file| file.path == "src/lib.rs" && !file.evidence_ids.is_empty()));
+    assert!(bundle.source_context_selectors.iter().any(|selector| {
+        selector.selector_kind == SourceContextSelectorKind::SymbolId
+            && selector.symbol_name.as_deref() == Some("top_level_function")
+            && selector.file_path == "src/lib.rs"
+            && !selector.evidence_ids.is_empty()
+    }));
     assert!(source_evidence_bundle_evidence_valid(&bundle));
     assert!(bundle
         .repo_context
@@ -895,6 +902,10 @@ fn source_evidence_file_path_query_returns_candidate_file() {
         .candidate_files
         .iter()
         .any(|file| file.path == "src/lib.rs"));
+    assert!(bundle.source_context_selectors.iter().any(|selector| {
+        selector.selector_kind == SourceContextSelectorKind::File
+            && selector.file_path == "src/lib.rs"
+    }));
     assert!(source_evidence_bundle_evidence_valid(&bundle));
 }
 
@@ -907,6 +918,7 @@ fn source_evidence_no_match_returns_insufficient_evidence() {
     assert_eq!(bundle.confidence, BundleConfidence::Insufficient);
     assert!(bundle.candidate_files.is_empty());
     assert!(bundle.candidate_symbols.is_empty());
+    assert!(bundle.source_context_selectors.is_empty());
     assert!(bundle
         .warnings
         .iter()
@@ -938,10 +950,15 @@ fn source_evidence_broad_query_truncates_candidates() {
     assert!(bundle.candidate_files.len() <= 8);
     assert!(bundle.candidate_symbols.len() <= 12);
     assert!(bundle.repo_context.len() <= 12);
+    assert!(bundle.source_context_selectors.len() <= 12);
     assert!(bundle
         .warnings
         .iter()
         .any(|warning| warning.category == BundleWarningCategory::CandidateLimitExceeded));
+    assert!(bundle
+        .warnings
+        .iter()
+        .any(|warning| warning.category == BundleWarningCategory::SelectorHintLimitExceeded));
 }
 
 #[test]
@@ -983,9 +1000,41 @@ fn source_evidence_output_is_deterministic() {
 }
 
 #[test]
+fn source_evidence_selector_hint_can_feed_source_context_manually() {
+    let bundle =
+        build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "top_level_function");
+    let selector = bundle
+        .source_context_selectors
+        .iter()
+        .find(|selector| selector.selector_kind == SourceContextSelectorKind::SymbolId)
+        .expect("symbol selector hint should exist");
+    let symbol_id = selector
+        .symbol_id
+        .as_ref()
+        .expect("symbol selector should include symbol_id");
+
+    let report = build_source_context_report(
+        "tests/fixtures/rust-symbols-basic",
+        vec![SourceContextSelector::SymbolId {
+            symbol_id: symbol_id.clone(),
+        }],
+    );
+
+    assert_eq!(report.status, SourceContextStatus::Ok);
+    assert!(report
+        .slices
+        .iter()
+        .any(|slice| slice.symbol_name.as_deref() == Some("top_level_function")));
+}
+
+#[test]
 fn source_evidence_output_has_no_edit_target_language() {
     let bundle = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "widget");
     let json = serde_json::to_string(&bundle).expect("bundle should serialize");
+
+    let value: JsonValue = serde_json::from_str(&json).expect("bundle should be JSON");
+    assert!(value.get("source_context_selectors").is_some());
+    assert!(value.get("slices").is_none());
 
     for forbidden in [
         "edit this",

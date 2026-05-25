@@ -123,9 +123,17 @@
 ## Phase 2F: EvidenceBundle and SourceContext integration
 
 - Add selector hints from SourceEvidenceBundle candidates to SourceContext.
+- Bump `source_evidence` contract to `0.3`.
 - Do not include snippets by default.
 - Do not emit edit targets.
 - Keep natural-language localization deferred.
+
+## Phase 2G: Localization readiness adversarial gate
+
+- Add adversarial fixtures for ambiguous same-name symbols.
+- Add broad-query, ignored-path, malformed-source, and missing-reference cases.
+- Prove selector hints stay context handles rather than edit targets.
+- Keep `where-to-edit` as `insufficient_evidence`.
 
 ## Phase 3: LSP diagnostics bridge
 

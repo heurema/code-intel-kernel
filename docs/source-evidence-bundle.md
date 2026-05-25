@@ -1,20 +1,21 @@
 # SourceEvidenceBundle Contract
 
-Status: Phase 2D prototype contract. Active as read-only evidence assembly, not localization.
+Status: Phase 2F prototype contract. Active as read-only evidence assembly, not localization.
 
 A SourceEvidenceBundle is a source-level evidence packet for future review, localization, and impact reasoning. It combines candidate source files, candidate symbols, source evidence, and relevant RepoGraph context while remaining honest about missing evidence.
 
-Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. Phase 2E adds SourceContext as a separate explicit-selector snippet layer. SourceEvidenceBundle does not include snippets by default and does not connect to `where-to-edit`.
+Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. Phase 2E adds SourceContext as a separate explicit-selector snippet layer. Phase 2F adds SourceContext selector hints. SourceEvidenceBundle does not include snippets by default and does not connect to `where-to-edit`.
 
 ## Shape
 
 ```json
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "status": "ok | partial | insufficient_evidence",
   "query": "change login validation copy",
   "candidate_files": [],
   "candidate_symbols": [],
+  "source_context_selectors": [],
   "repo_context": [],
   "source_evidence": [],
   "warnings": [],
@@ -53,6 +54,17 @@ Expected fields:
 - `evidence_ids`: existing source evidence IDs.
 
 Top-level symbols are not enough to claim edit localization. Candidate symbols must remain context, not instructions.
+
+## source_context_selectors
+
+Selector hints are optional read-only handles for `source-context`.
+
+They may point to:
+
+- a candidate file through `selector_kind = "file"`;
+- a candidate symbol through `selector_kind = "symbol_id"`.
+
+They must be evidence-backed, deterministic, capped, and documented as context retrieval handles only.
 
 ## repo_context
 
@@ -134,6 +146,7 @@ Example:
 
 - No active edit planning.
 - No `where-to-edit` integration.
+- No embedded source snippets by default.
 - No call graph.
 - No reference resolution.
 - No LSP diagnostics.

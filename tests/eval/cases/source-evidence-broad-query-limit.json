@@ -15,12 +15,14 @@
     ],
     "warnings_contains_categories": [
       "candidate_limit_exceeded",
+      "selector_hint_limit_exceeded",
       "query_too_broad",
       "localization_not_supported"
     ],
     "missing_evidence_contains": [
       "candidate_limit_exceeded",
       "query_too_broad"
-    ]
+    ],
+    "max_source_context_selectors": 12
   }
 }

@@ -99,7 +99,7 @@ Symbol cases use the same file format:
 
 For `symbols_contains` and `symbols_not_contains`, `kind` and `path` may be supplied to make the match more specific. Symbol eval always checks evidence coverage and deterministic output across repeated extraction.
 
-Source-evidence cases can assert candidate files, candidate symbols, status, confidence, warnings, and missing evidence:
+Source-evidence cases can assert candidate files, candidate symbols, selector hints, status, confidence, warnings, and missing evidence:
 
 ```json
 {
@@ -114,6 +114,7 @@ Source-evidence cases can assert candidate files, candidate symbols, status, con
     "candidate_symbols_contains": [
       { "name": "top_level_function", "kind": "function" }
     ],
+    "selector_hints_contains": ["src/lib.rs"],
     "warnings_contains_categories": ["localization_not_supported"],
     "missing_evidence_contains": ["no_symbol_reference_layer"]
   }
@@ -183,6 +184,7 @@ The initial case set covers:
 - ignored source paths for SymbolGraph-lite.
 - SourceEvidenceBundle function match, file match, and no-match refusal.
 - SourceEvidenceBundle broad-query candidate limit and malformed-source refusal.
+- SourceEvidenceBundle selector hints for exact file/symbol matches.
 - SourceContext file slice, symbol slice, missing file, and ignored path refusal.
 
 ## Negative Case Rationale

@@ -1,6 +1,6 @@
 # Localization Readiness Checklist
 
-Status: Phase 2E gate. Current conclusion: `not_ready_for_confident_localization`.
+Status: Phase 2F gate. Current conclusion: `not_ready_for_confident_localization`.
 
 This checklist defines what must be true before `where-to-edit` can return confident file or symbol candidates.
 
@@ -50,6 +50,9 @@ This checklist defines what must be true before `where-to-edit` can return confi
 - [x] SourceContext path safety is checked.
   Evidence: eval cases `source_context_missing_file` and `source_context_ignored_path`; smoke tests for missing, ignored, outside, symlink, and non-UTF8 paths.
 
+- [x] SourceEvidence emits explicit SourceContext selector hints.
+  Evidence: source-evidence eval cases for selector hints; smoke test `source_evidence_selector_hint_can_feed_source_context_manually`.
+
 - [ ] Candidate files and symbols are tied to queries by semantic/evaluated relevance evidence, not only string matching.
 - [ ] SymbolGraph-to-RepoGraph linking is defined and tested.
 - [ ] Reference/import/call graph decision is made.
@@ -63,4 +66,4 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 `not_ready_for_confident_localization`
 
-Phase 2E verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, refusal behavior, and bounded read-only source slices. It still uses explicit selectors and deterministic string/token matching. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.
+Phase 2F verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, refusal behavior, bounded read-only source slices, and explicit selector hints. It still uses deterministic string/token matching and explicit selectors. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.

@@ -11,6 +11,7 @@
       "no_matching_source_symbols",
       "localization_not_supported"
     ],
-    "missing_evidence_contains": ["no_source_match"]
+    "missing_evidence_contains": ["no_source_match"],
+    "max_source_context_selectors": 0
   }
 }

@@ -42,7 +42,7 @@ Phase 2A implements only SymbolGraph-lite:
 
 It still does not own calls, references, imports/exports, LSP diagnostics, or edit localization.
 
-Phase 2B adds evaluation coverage for SymbolGraph-lite. Phase 2C adds SourceEvidenceBundle as read-only evidence assembly. Phase 2D hardens source-to-repo context roles and refusal behavior. Phase 2E adds SourceContext as explicit-selector, read-only source slices. None of these move edit localization into SymbolGraph.
+Phase 2B adds evaluation coverage for SymbolGraph-lite. Phase 2C adds SourceEvidenceBundle as read-only evidence assembly. Phase 2D hardens source-to-repo context roles and refusal behavior. Phase 2E adds SourceContext as explicit-selector, read-only source slices. Phase 2F adds selector hints from SourceEvidence to SourceContext. None of these move edit localization into SymbolGraph.
 
 ## Explicit Non-Goals
 
@@ -61,7 +61,7 @@ SymbolGraph must not:
 - own manifest dependency extraction;
 - encode Goalrail, Punk, or other consumer-specific behavior.
 
-SourceContext owns bounded source snippets for explicit file or symbol selectors. It must not accept natural-language localization queries or turn evidence candidates into edit targets.
+SourceContext owns bounded source snippets for explicit file or symbol selectors. SourceEvidence may suggest selector hints for manual SourceContext retrieval. Neither layer may accept natural-language localization queries or turn evidence candidates into edit targets.
 
 ## Interaction Model
 

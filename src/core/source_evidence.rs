@@ -10,10 +10,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-pub const SOURCE_EVIDENCE_CONTRACT_VERSION: &str = "0.2";
+pub const SOURCE_EVIDENCE_CONTRACT_VERSION: &str = "0.3";
 const MAX_CANDIDATE_FILES: usize = 8;
 const MAX_CANDIDATE_SYMBOLS: usize = 12;
 const MAX_REPO_CONTEXT_ITEMS: usize = 12;
+const MAX_SOURCE_CONTEXT_SELECTORS: usize = 12;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SourceEvidenceBundle {
@@ -23,6 +24,7 @@ pub struct SourceEvidenceBundle {
     pub confidence: BundleConfidence,
     pub candidate_files: Vec<CandidateFile>,
     pub candidate_symbols: Vec<CandidateSymbol>,
+    pub source_context_selectors: Vec<SourceContextSelectorHint>,
     pub repo_context: Vec<RepoContextItem>,
     pub source_evidence: Vec<Evidence>,
     pub warnings: Vec<BundleWarning>,
@@ -68,6 +70,30 @@ pub struct CandidateSymbol {
     pub confidence: BundleConfidence,
     pub reason: String,
     pub evidence_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceContextSelectorHint {
+    pub selector_id: String,
+    pub selector_kind: SourceContextSelectorKind,
+    pub file_path: String,
+    pub symbol_id: Option<String>,
+    pub symbol_name: Option<String>,
+    pub symbol_kind: Option<SymbolKind>,
+    pub start_line: Option<usize>,
+    pub end_line: Option<usize>,
+    pub reason: String,
+    pub confidence: BundleConfidence,
+    pub evidence_ids: Vec<String>,
+    pub limitations: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceContextSelectorKind {
+    File,
+    FileRange,
+    SymbolId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -126,6 +152,7 @@ pub enum BundleWarningCategory {
     ParseErrorPresent,
     QueryTooBroad,
     RepoGraphContextUnavailable,
+    SelectorHintLimitExceeded,
     SymbolGraphParseWarning,
     UnsupportedLanguage,
 }
@@ -213,6 +240,11 @@ pub fn build_source_evidence_bundle_from_graphs(
     candidate_files.truncate(MAX_CANDIDATE_FILES);
     candidate_symbols.truncate(MAX_CANDIDATE_SYMBOLS);
 
+    let mut source_context_selectors =
+        source_context_selectors(&candidate_files, &candidate_symbols);
+    limits.selectors_before = source_context_selectors.len();
+    source_context_selectors.truncate(MAX_SOURCE_CONTEXT_SELECTORS);
+
     let mut repo_context = repo_context(repo_graph, &candidate_files, &candidate_symbols);
     repo_context.sort_by(|left, right| {
         left.kind
@@ -270,6 +302,7 @@ pub fn build_source_evidence_bundle_from_graphs(
         confidence,
         candidate_files,
         candidate_symbols,
+        source_context_selectors,
         repo_context,
         source_evidence,
         warnings,
@@ -304,6 +337,12 @@ pub fn source_evidence_bundle_evidence_valid(bundle: &SourceEvidenceBundle) -> b
                 .evidence_ids
                 .iter()
                 .all(|id| evidence_ids.contains(id.as_str()))
+    }) && bundle.source_context_selectors.iter().all(|selector| {
+        !selector.evidence_ids.is_empty()
+            && selector
+                .evidence_ids
+                .iter()
+                .all(|id| evidence_ids.contains(id.as_str()))
     }) && bundle.repo_context.iter().all(|context| {
         !context.evidence_ids.is_empty()
             && context
@@ -323,6 +362,7 @@ struct CandidateLimitState {
     files_before: usize,
     symbols_before: usize,
     repo_context_before: usize,
+    selectors_before: usize,
 }
 
 impl CandidateLimitState {
@@ -330,6 +370,10 @@ impl CandidateLimitState {
         self.files_before > MAX_CANDIDATE_FILES
             || self.symbols_before > MAX_CANDIDATE_SYMBOLS
             || self.repo_context_before > MAX_REPO_CONTEXT_ITEMS
+    }
+
+    fn selectors_exceeded(self) -> bool {
+        self.selectors_before > MAX_SOURCE_CONTEXT_SELECTORS
     }
 }
 
@@ -369,6 +413,89 @@ fn candidate_file(
         reason,
         evidence_ids: source_file.evidence_ids.clone(),
     })
+}
+
+fn source_context_selectors(
+    candidate_files: &[CandidateFile],
+    candidate_symbols: &[CandidateSymbol],
+) -> Vec<SourceContextSelectorHint> {
+    let mut selectors = Vec::new();
+
+    for symbol in candidate_symbols {
+        if symbol.evidence_ids.is_empty() {
+            continue;
+        }
+        selectors.push(SourceContextSelectorHint {
+            selector_id: stable_id(
+                "source-context-selector",
+                &format!("symbol-id-{}-{}", symbol.path, symbol.symbol_id),
+            ),
+            selector_kind: SourceContextSelectorKind::SymbolId,
+            file_path: symbol.path.clone(),
+            symbol_id: Some(symbol.symbol_id.clone()),
+            symbol_name: Some(symbol.name.clone()),
+            symbol_kind: Some(symbol.kind.clone()),
+            start_line: Some(symbol.range.start_line),
+            end_line: Some(symbol.range.end_line),
+            reason: selector_reason_for_symbol(symbol),
+            confidence: symbol.confidence.clone(),
+            evidence_ids: symbol.evidence_ids.clone(),
+            limitations: selector_limitations(),
+        });
+    }
+
+    for file in candidate_files {
+        if file.evidence_ids.is_empty() {
+            continue;
+        }
+        selectors.push(SourceContextSelectorHint {
+            selector_id: stable_id("source-context-selector", &format!("file-{}", file.path)),
+            selector_kind: SourceContextSelectorKind::File,
+            file_path: file.path.clone(),
+            symbol_id: None,
+            symbol_name: None,
+            symbol_kind: None,
+            start_line: None,
+            end_line: None,
+            reason: selector_reason_for_file(file),
+            confidence: file.confidence.clone(),
+            evidence_ids: file.evidence_ids.clone(),
+            limitations: selector_limitations(),
+        });
+    }
+
+    selectors.sort_by(compare_source_context_selectors);
+    selectors.dedup_by(|left, right| left.selector_id == right.selector_id);
+    selectors
+}
+
+fn selector_reason_for_symbol(symbol: &CandidateSymbol) -> String {
+    match symbol.reason.as_str() {
+        "exact_symbol_match" => "exact_symbol_match",
+        "symbol_substring_match" => "matched_candidate_symbol",
+        "query_token_overlap" => "token_overlap_candidate",
+        _ => "matched_candidate_symbol",
+    }
+    .to_string()
+}
+
+fn selector_reason_for_file(file: &CandidateFile) -> String {
+    match file.reason.as_str() {
+        "exact_file_match" => "exact_file_match",
+        "path_substring_match" => "matched_candidate_file",
+        "query_token_overlap" => "token_overlap_candidate",
+        "contains_candidate_symbol" => "matched_candidate_symbol",
+        _ => "matched_candidate_file",
+    }
+    .to_string()
+}
+
+fn selector_limitations() -> Vec<String> {
+    vec![
+        "Selector is for read-only SourceContext retrieval only.".to_string(),
+        "Selector does not include source text.".to_string(),
+        "Selector does not imply correctness or ownership.".to_string(),
+    ]
 }
 
 fn symbol_match_quality(
@@ -679,6 +806,15 @@ fn bundle_warnings(
             None,
         ));
     }
+    if limits.selectors_exceeded() {
+        warnings.push(bundle_warning(
+            BundleWarningCategory::SelectorHintLimitExceeded,
+            DetectionSeverity::Warning,
+            "SourceContext selector hints were deterministically truncated; provide a narrower query.",
+            None,
+            None,
+        ));
+    }
     if repo_context.is_empty() && (!candidate_files.is_empty() || !candidate_symbols.is_empty()) {
         warnings.push(bundle_warning(
             BundleWarningCategory::NoRepoComponentContext,
@@ -881,6 +1017,26 @@ fn compare_candidate_symbols(
         .then_with(|| left.path.cmp(&right.path))
         .then_with(|| left.name.cmp(&right.name))
         .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+}
+
+fn compare_source_context_selectors(
+    left: &SourceContextSelectorHint,
+    right: &SourceContextSelectorHint,
+) -> std::cmp::Ordering {
+    selector_kind_rank(&left.selector_kind)
+        .cmp(&selector_kind_rank(&right.selector_kind))
+        .then_with(|| confidence_rank(&left.confidence).cmp(&confidence_rank(&right.confidence)))
+        .then_with(|| left.file_path.cmp(&right.file_path))
+        .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+        .then_with(|| left.selector_id.cmp(&right.selector_id))
+}
+
+fn selector_kind_rank(kind: &SourceContextSelectorKind) -> u8 {
+    match kind {
+        SourceContextSelectorKind::SymbolId => 0,
+        SourceContextSelectorKind::FileRange => 1,
+        SourceContextSelectorKind::File => 2,
+    }
 }
 
 fn confidence_rank(confidence: &BundleConfidence) -> u8 {

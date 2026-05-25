@@ -89,7 +89,7 @@ The current implementation is a **read-only, structural-first kernel** with a st
 2. `impact`: conservative RepoGraph-only impact from changed files.
 3. `eval-fixtures`: fixture-based quality gate for inspect, impact, symbols, source-evidence, and source-context.
 4. `symbols`: evidence-backed Rust top-level source facts.
-5. `source-evidence`: read-only evidence assembly from RepoGraph and SymbolGraph-lite.
+5. `source-evidence`: read-only evidence assembly and SourceContext selector hints from RepoGraph and SymbolGraph-lite.
 6. `source-context`: explicit-selector, read-only bounded source snippets.
 7. `where-to-edit`: still returns `insufficient_evidence` until evaluated localization evidence exists.
 
@@ -116,7 +116,7 @@ Do **not** build these first:
 - Automatic refactor tools.
 - UI/dashboard.
 
-The current first milestone is CLI/library only: RepoGraph inspect, impact, eval, SymbolGraph-lite symbols, SourceEvidenceBundle evidence assembly, and explicit SourceContext slices. SQLite and MCP remain deferred until core CLI/API behavior is stable.
+The current first milestone is CLI/library only: RepoGraph inspect, impact, eval, SymbolGraph-lite symbols, SourceEvidenceBundle evidence assembly with selector hints, and explicit SourceContext slices. SQLite and MCP remain deferred until core CLI/API behavior is stable.
 
 ## First Codex instruction
 

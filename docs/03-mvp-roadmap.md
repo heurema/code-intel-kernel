@@ -31,6 +31,7 @@ Phase 2B: SymbolGraph eval and SourceEvidenceBundle contract
 Phase 2C: SourceEvidenceBundle prototype
 Phase 2D: Source-to-repo evidence linking
 Phase 2E: Read-only SourceContext slices
+Phase 2F: SourceContext selector hints
 Phase 3: LSP diagnostics bridge
 Phase 4: EvidenceBundle and ProcessReward
 Phase 5: SessionMemory
@@ -180,9 +181,25 @@ Assemble query, RepoGraph context, SymbolGraph-lite facts, evidence, limitations
 ### Acceptance criteria
 
 - `source-evidence` CLI returns valid JSON.
-- `source_evidence` contract version is `0.2` after Phase 2D context-role hardening.
+- `source_evidence` contract version is `0.3` after Phase 2F selector hints.
 - Eval includes source-evidence cases.
 - Candidate files and symbols are evidence-backed.
+- No output claims edit locations.
+- `where-to-edit` remains `insufficient_evidence`.
+
+## Phase 2F — SourceContext selector hints
+
+### Goal
+
+Add explicit SourceContext selector hints to SourceEvidenceBundle.
+
+### Acceptance criteria
+
+- SourceEvidence emits `source_context_selectors`.
+- Hints are generated only from evidence-backed candidate files and symbols.
+- Hints are capped and deterministic.
+- Hints can be used manually with `source-context`.
+- SourceEvidence does not include snippets by default.
 - No output claims edit locations.
 - `where-to-edit` remains `insufficient_evidence`.
 

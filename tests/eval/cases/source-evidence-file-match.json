@@ -7,6 +7,7 @@
     "status": "partial",
     "confidence": "high",
     "candidate_files_contains": ["src/lib.rs"],
+    "selector_hints_contains": ["src/lib.rs"],
     "repo_context_contains": ["rust-symbols-basic"],
     "repo_context_roles_contains": ["containing_component"],
     "warnings_contains_categories": ["localization_not_supported"]

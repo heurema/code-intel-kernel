@@ -8,7 +8,8 @@ use crate::core::source_context::{
 };
 use crate::core::source_evidence::{
     build_source_evidence_bundle, source_evidence_bundle_evidence_valid, BundleWarning,
-    BundleWarningCategory, CandidateSymbol, RepoContextRole, SourceEvidenceBundle,
+    BundleWarningCategory, CandidateSymbol, RepoContextRole, SourceContextSelectorHint,
+    SourceEvidenceBundle,
 };
 use crate::core::symbol_graph::{
     build_symbol_graph, symbol_graph_evidence_valid, SourceSymbol, SymbolGraph, SymbolKind,
@@ -89,6 +90,11 @@ pub struct EvalExpect {
     pub repo_context_roles_contains: Vec<String>,
     #[serde(default)]
     pub missing_evidence_contains: Vec<String>,
+    #[serde(default)]
+    pub selector_hints_contains: Vec<String>,
+    #[serde(default)]
+    pub selector_hint_symbols_contains: Vec<ExpectedSymbol>,
+    pub max_source_context_selectors: Option<usize>,
     #[serde(default)]
     pub slices_contains: Vec<String>,
     #[serde(default)]
@@ -454,6 +460,11 @@ fn check_source_evidence_expectations(
         .iter()
         .map(|context| repo_context_role_name(&context.role))
         .collect::<Vec<_>>();
+    let selector_hints = bundle
+        .source_context_selectors
+        .iter()
+        .map(|selector| selector.file_path.as_str())
+        .collect::<Vec<_>>();
     let warning_categories = source_evidence_warning_categories(&bundle.warnings);
 
     check_contains_all(
@@ -493,6 +504,39 @@ fn check_source_evidence_expectations(
     );
     check_warning_expectations(case, &warning_categories, counters, failures);
     check_missing_evidence_expectations(case, bundle, counters, failures);
+    check_contains_all(
+        case,
+        "selector_hints_contains",
+        &case.expect.selector_hints_contains,
+        &selector_hints,
+        "false_narrow",
+        counters,
+        failures,
+    );
+    check_selector_hint_symbol_contains_all(
+        case,
+        "selector_hint_symbols_contains",
+        &case.expect.selector_hint_symbols_contains,
+        &bundle.source_context_selectors,
+        counters,
+        failures,
+    );
+    if let Some(max) = case.expect.max_source_context_selectors {
+        let passed = bundle.source_context_selectors.len() <= max;
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_broad_count += 1;
+            failures.push(failure(
+                case,
+                "max_source_context_selectors",
+                format!("at most {max}"),
+                bundle.source_context_selectors.len().to_string(),
+                "false_broad",
+            ));
+        }
+    }
 }
 
 fn check_symbols_expectations(
@@ -894,6 +938,34 @@ fn check_candidate_symbol_contains_all(
     }
 }
 
+fn check_selector_hint_symbol_contains_all(
+    case: &EvalCase,
+    field: &str,
+    expected: &[ExpectedSymbol],
+    actual: &[SourceContextSelectorHint],
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    for expected_item in expected {
+        let passed = actual
+            .iter()
+            .any(|actual_item| selector_hint_symbol_matches(actual_item, expected_item));
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_narrow_count += 1;
+            failures.push(failure(
+                case,
+                field,
+                format_expected_symbol(expected_item),
+                format_actual_selector_hints(actual),
+                "false_narrow",
+            ));
+        }
+    }
+}
+
 fn check_slice_symbol_contains_all(
     case: &EvalCase,
     field: &str,
@@ -994,6 +1066,21 @@ fn candidate_symbol_matches(actual: &CandidateSymbol, expected: &ExpectedSymbol)
             .is_none_or(|path| actual.path == path)
 }
 
+fn selector_hint_symbol_matches(
+    actual: &SourceContextSelectorHint,
+    expected: &ExpectedSymbol,
+) -> bool {
+    actual.symbol_name.as_deref() == Some(expected.name.as_str())
+        && expected
+            .kind
+            .as_ref()
+            .is_none_or(|kind| actual.symbol_kind.as_ref() == Some(kind))
+        && expected
+            .path
+            .as_deref()
+            .is_none_or(|path| actual.file_path == path)
+}
+
 fn slice_symbol_matches(actual: &SourceContextSlice, expected: &ExpectedSymbol) -> bool {
     actual.symbol_name.as_deref() == Some(expected.name.as_str())
         && expected
@@ -1028,6 +1115,21 @@ fn format_actual_candidate_symbols(actual: &[CandidateSymbol]) -> String {
     actual
         .iter()
         .map(|symbol| format!("{:?}:{}@{}", symbol.kind, symbol.name, symbol.path))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn format_actual_selector_hints(actual: &[SourceContextSelectorHint]) -> String {
+    actual
+        .iter()
+        .map(|selector| {
+            format!(
+                "{:?}:{}@{}",
+                selector.selector_kind,
+                selector.symbol_name.as_deref().unwrap_or(""),
+                selector.file_path
+            )
+        })
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -1411,6 +1513,7 @@ fn source_evidence_category_name(category: &BundleWarningCategory) -> &'static s
         BundleWarningCategory::ParseErrorPresent => "parse_error_present",
         BundleWarningCategory::QueryTooBroad => "query_too_broad",
         BundleWarningCategory::RepoGraphContextUnavailable => "repo_graph_context_unavailable",
+        BundleWarningCategory::SelectorHintLimitExceeded => "selector_hint_limit_exceeded",
         BundleWarningCategory::SymbolGraphParseWarning => "symbol_graph_parse_warning",
         BundleWarningCategory::UnsupportedLanguage => "unsupported_language",
     }
