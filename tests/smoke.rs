@@ -99,10 +99,11 @@ fn detects_minimal_python_project_fixture() {
         .components
         .iter()
         .any(|component| component.name == "minimal-python"));
+    assert!(graph.tests.is_empty());
     assert!(graph
-        .tests
+        .warnings
         .iter()
-        .any(|test| test.command == "python -m pytest"));
+        .any(|warning| warning.category == DetectionCategory::AmbiguousDetection));
 }
 
 #[test]
@@ -117,6 +118,10 @@ fn detects_minimal_go_module_fixture() {
         .tests
         .iter()
         .any(|test| test.command == "go test ./..."));
+    assert!(graph
+        .commands
+        .iter()
+        .any(|command| command.command == "go build ./..."));
 }
 
 #[test]
@@ -184,7 +189,15 @@ fn every_fixture_has_valid_inspect_json_and_evidence_refs() {
         "tests/fixtures/cargo-workspace-deps",
         "tests/fixtures/minimal-node",
         "tests/fixtures/minimal-python",
+        "tests/fixtures/python-pyproject-basic",
+        "tests/fixtures/python-pytest-evidence",
+        "tests/fixtures/python-tests-ambiguous",
+        "tests/fixtures/python-malformed-pyproject",
         "tests/fixtures/minimal-go",
+        "tests/fixtures/go-module-basic",
+        "tests/fixtures/go-module-with-tests",
+        "tests/fixtures/go-workspace-basic",
+        "tests/fixtures/go-malformed-mod",
         "tests/fixtures/generic-make",
         "tests/fixtures/generic-just",
         "tests/fixtures/malformed-manifest",
@@ -277,6 +290,121 @@ fn malformed_manifest_produces_structured_warning() {
             && warning.evidence_id.is_some()
     }));
     assert_all_warnings_are_structured(&graph);
+}
+
+#[test]
+fn python_pyproject_name_is_extracted() {
+    let graph = inspect_repo("tests/fixtures/python-pyproject-basic");
+
+    assert!(graph
+        .components
+        .iter()
+        .any(|component| component.name == "python-basic"));
+    assert!(graph.tests.is_empty());
+    assert!(graph
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::MissingCommand));
+}
+
+#[test]
+fn python_pytest_evidence_produces_test_command() {
+    let graph = inspect_repo("tests/fixtures/python-pytest-evidence");
+
+    assert!(graph
+        .tests
+        .iter()
+        .any(|test| test.command == "pytest" && !test.evidence_id.is_empty()));
+    assert!(graph
+        .commands
+        .iter()
+        .any(|command| command.command == "pytest"));
+    assert_all_evidence_refs_exist(&graph);
+}
+
+#[test]
+fn python_tests_without_pytest_evidence_warns_without_guessing() {
+    let graph = inspect_repo("tests/fixtures/python-tests-ambiguous");
+
+    assert!(graph.tests.is_empty());
+    assert!(graph.commands.is_empty());
+    assert!(graph
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::AmbiguousDetection));
+}
+
+#[test]
+fn malformed_pyproject_produces_warning_without_panic() {
+    let graph = inspect_repo("tests/fixtures/python-malformed-pyproject");
+
+    assert!(graph.components.is_empty());
+    assert!(graph.commands.is_empty());
+    assert!(graph
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::MalformedManifest));
+}
+
+#[test]
+fn go_module_recommends_test_and_build_with_evidence() {
+    let graph = inspect_repo("tests/fixtures/go-module-basic");
+
+    assert!(graph
+        .components
+        .iter()
+        .any(|component| component.name == "example.com/go-basic"));
+    assert!(graph
+        .commands
+        .iter()
+        .any(|command| command.command == "go test ./..."));
+    assert!(graph
+        .commands
+        .iter()
+        .any(|command| command.command == "go build ./..."));
+    assert_all_evidence_refs_exist(&graph);
+}
+
+#[test]
+fn go_test_file_strengthens_test_command_evidence() {
+    let graph = inspect_repo("tests/fixtures/go-module-with-tests");
+
+    assert!(graph
+        .detected_files
+        .iter()
+        .any(|file| file.path == "foo_test.go"));
+    let test = graph
+        .tests
+        .iter()
+        .find(|test| test.command == "go test ./...")
+        .expect("go test target should exist");
+    assert!(graph
+        .evidence
+        .iter()
+        .any(|evidence| evidence.id == test.evidence_id && evidence.path == "foo_test.go"));
+}
+
+#[test]
+fn go_workspace_members_are_parsed_when_simple() {
+    let graph = inspect_repo("tests/fixtures/go-workspace-basic");
+
+    assert_eq!(graph.workspaces.len(), 1);
+    assert_eq!(
+        graph.workspaces[0].members,
+        vec!["./apps/api", "./libs/core"]
+    );
+}
+
+#[test]
+fn malformed_go_mod_warns_without_fake_component() {
+    let graph = inspect_repo("tests/fixtures/go-malformed-mod");
+
+    assert!(graph.components.is_empty());
+    assert!(graph.commands.is_empty());
+    assert!(graph
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::MalformedManifest));
 }
 
 #[test]
@@ -409,6 +537,65 @@ fn impact_for_unknown_file_is_insufficient_evidence() {
         .warnings
         .iter()
         .any(|warning| warning.category == DetectionCategory::UnmappedChange));
+}
+
+#[test]
+fn impact_for_python_manifest_is_broad_and_conservative() {
+    let graph = inspect_repo("tests/fixtures/python-pytest-evidence");
+    let impact = analyze_impact(&graph, ["pyproject.toml"]);
+
+    assert_eq!(impact.status, ImpactStatus::Partial);
+    assert_eq!(impact.impact_scope, ImpactScope::Broad);
+    assert!(impact
+        .impacted_components
+        .iter()
+        .any(|component| component.name == "python-pytest-evidence"
+            && component.impact_kind == ImpactKind::Broad));
+    assert!(impact
+        .recommended_tests
+        .iter()
+        .any(|test| test.command == "pytest"));
+}
+
+#[test]
+fn impact_for_python_ambiguous_test_file_does_not_guess_test_command() {
+    let graph = inspect_repo("tests/fixtures/python-tests-ambiguous");
+    let impact = analyze_impact(&graph, ["tests/test_example.py"]);
+
+    assert_eq!(impact.status, ImpactStatus::Partial);
+    assert!(impact.recommended_tests.is_empty());
+    assert!(impact
+        .warnings
+        .iter()
+        .any(|warning| warning.category == DetectionCategory::AmbiguousDetection));
+}
+
+#[test]
+fn impact_for_go_mod_is_broad_and_recommends_go_commands() {
+    let graph = inspect_repo("tests/fixtures/go-module-basic");
+    let impact = analyze_impact(&graph, ["go.mod"]);
+
+    assert_eq!(impact.impact_scope, ImpactScope::Broad);
+    assert!(impact
+        .recommended_commands
+        .iter()
+        .any(|command| command.command == "go test ./..."));
+    assert!(impact
+        .recommended_commands
+        .iter()
+        .any(|command| command.command == "go build ./..."));
+}
+
+#[test]
+fn impact_for_go_test_file_recommends_go_test() {
+    let graph = inspect_repo("tests/fixtures/go-module-with-tests");
+    let impact = analyze_impact(&graph, ["foo_test.go"]);
+
+    assert_eq!(impact.status, ImpactStatus::Partial);
+    assert!(impact
+        .recommended_tests
+        .iter()
+        .any(|test| test.command == "go test ./..."));
 }
 
 #[test]

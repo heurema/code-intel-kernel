@@ -1,6 +1,6 @@
 # Extractor Quality
 
-Status: Phase 1E-A RepoGraph extractor baseline.
+Status: Phase 1E-B RepoGraph extractor baseline.
 
 RepoGraph extraction is repository/build/test-level only. It does not extract symbols, imports, references, call graphs, diagnostics, semantic search results, or edit locations.
 
@@ -11,8 +11,8 @@ Current read-only inputs:
 - Cargo: `Cargo.toml`, `Cargo.lock`, default `src/lib.rs`, default `src/main.rs`, explicit `[[bin]]` paths.
 - Cargo workspaces: root `workspace.members`, member `Cargo.toml`, explicit member path dependencies.
 - Node: `package.json`, package manager lockfiles, `pnpm-workspace.yaml`.
-- Python: `pyproject.toml`, `requirements.txt`, `uv.lock`, `poetry.lock`, `tests/`.
-- Go: `go.mod`, shallow `go.work` detection.
+- Python: `pyproject.toml`, `requirements.txt`, `uv.lock`, `poetry.lock`, `pytest.ini`, `tests/`.
+- Go: `go.mod`, simple `go.work` members, `*_test.go` as path evidence.
 - Command files: `Makefile`, `justfile`.
 - Container/workflow hints: Docker Compose files, `Dockerfile`, `.github/workflows/*.yml`.
 - Ignored paths: `.git`, `target`, `node_modules`, `dist`, `build`, `.cache`, `.venv`, `__pycache__`, `coverage`.
@@ -58,6 +58,10 @@ Warnings should not stop inspection unless the caller chooses to treat them as p
 - Cargo workspace member components belong to `workspace-cargo`.
 - Makefile and justfile commands are emitted only for clear top-level targets: `test`, `check`, `build`, `lint`, `fmt`, and `format`.
 - Ambiguous Makefile/justfile target-like lines produce `partial_support` warnings instead of guessed commands.
+- Python `pytest` is emitted only when `pyproject.toml`, `requirements.txt`, or `pytest.ini` provides pytest evidence.
+- Python `tests/` without pytest evidence produces an ambiguity warning instead of a guessed test command.
+- Go modules get `go test ./...` and `go build ./...` from `go.mod` evidence when a module declaration is parsed.
+- Go `*_test.go` files can strengthen test-command evidence but are used only as paths, not parsed for source semantics.
 
 ## Intentionally Not Extracted Yet
 
@@ -65,7 +69,9 @@ Warnings should not stop inspection unless the caller chooses to treat them as p
 - `cargo metadata`.
 - Shell command bodies from Makefile or justfile recipes.
 - Python import/module/package structure.
+- Python virtualenvs or installed package inspection.
 - Go package graph or `go list` output.
+- Go source semantics beyond `*_test.go` path evidence.
 - Node workspace package graph.
 - Source-level symbols, references, imports, definitions, or call edges.
 - LSP diagnostics.
@@ -83,7 +89,13 @@ Current fixtures cover:
 - Rust workspace path dependency;
 - minimal Node package;
 - minimal Python project with tests;
+- Python pytest evidence;
+- Python ambiguous tests without pytest evidence;
+- malformed Python manifest;
 - minimal Go module;
+- Go module with tests;
+- simple Go workspace;
+- malformed Go module;
 - Makefile project;
 - justfile project;
 - malformed manifest;

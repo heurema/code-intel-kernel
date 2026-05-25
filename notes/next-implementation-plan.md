@@ -56,6 +56,7 @@
 
 - Add lightweight fixture-based scoring for inspect/impact quality.
 - Track evidence coverage, warning quality, expected command/test detection, and impact expectations.
+- Track false broad versus false narrow impact behavior.
 - Use this before deciding whether to start SymbolGraph.
 
 ## Phase 2: SymbolGraph MVP

@@ -1840,7 +1840,7 @@ fn detect_node(root: &Path, builder: &mut RepoGraphBuilder) {
 fn detect_python(root: &Path, builder: &mut RepoGraphBuilder) {
     let mut python_project_detected = false;
     let mut python_project_evidence = None;
-    let mut pytest_config_evidence = None;
+    let mut pytest_evidence = None;
 
     let pyproject = root.join("pyproject.toml");
     if pyproject.exists() {
@@ -1902,18 +1902,14 @@ fn detect_python(root: &Path, builder: &mut RepoGraphBuilder) {
                     );
                 }
 
-                if manifest
-                    .get("tool")
-                    .and_then(|tool| tool.get("pytest"))
-                    .is_some()
-                {
+                if let Some(field) = pyproject_pytest_field(&manifest) {
                     let evidence_id = builder.add_evidence(
                         Path::new("pyproject.toml"),
                         "test_config",
-                        Some("tool.pytest"),
-                        "pytest configuration detected.",
+                        Some(&field),
+                        "pytest evidence detected in pyproject.toml.",
                     );
-                    pytest_config_evidence = Some(evidence_id);
+                    pytest_evidence = Some(evidence_id);
                 }
             }
             Err(message) => builder.add_warning(
@@ -1947,20 +1943,53 @@ fn detect_python(root: &Path, builder: &mut RepoGraphBuilder) {
             "Python requirements file detected.",
         );
         python_project_evidence = Some(evidence_id.clone());
-        builder.add_package_manager(PackageManagerKind::Pip, "pip", evidence_id);
+        builder.add_package_manager(PackageManagerKind::Pip, "pip", evidence_id.clone());
+        if requirements_mentions_pytest(&requirements) {
+            let pytest_requirement_evidence = builder.add_evidence(
+                Path::new("requirements.txt"),
+                "test_config",
+                Some("requirements.pytest"),
+                "pytest dependency detected in requirements.txt.",
+            );
+            pytest_evidence = Some(pytest_requirement_evidence);
+        }
     }
 
-    if let Some(evidence_id) = pytest_config_evidence {
-        add_pytest(builder, evidence_id);
-    } else if python_project_detected && root.join("tests").is_dir() {
+    let pytest_ini = root.join("pytest.ini");
+    if pytest_ini.exists() {
+        python_project_detected = true;
         let evidence_id = builder.add_detected_file(
+            Path::new("pytest.ini"),
+            DetectedFileKind::TestConfig,
+            "test_config",
+            None,
+            "pytest.ini detected.",
+        );
+        pytest_evidence = Some(evidence_id);
+    }
+
+    let tests_dir_evidence = if python_project_detected && root.join("tests").is_dir() {
+        Some(builder.add_detected_file(
             Path::new("tests"),
             DetectedFileKind::TestConfig,
             "directory",
             None,
             "tests directory detected.",
-        );
+        ))
+    } else {
+        None
+    };
+
+    if let Some(evidence_id) = pytest_evidence {
         add_pytest(builder, evidence_id);
+    } else if let Some(evidence_id) = tests_dir_evidence {
+        builder.add_warning(
+            DetectionSeverity::Info,
+            DetectionCategory::AmbiguousDetection,
+            "Python tests directory detected, but no pytest evidence was found; no test command was inferred.",
+            Some(Path::new("tests")),
+            Some(evidence_id),
+        );
     } else if python_project_detected {
         let warning_path = if pyproject.exists() {
             Some(Path::new("pyproject.toml"))
@@ -1982,52 +2011,78 @@ fn detect_python(root: &Path, builder: &mut RepoGraphBuilder) {
 fn detect_go(root: &Path, builder: &mut RepoGraphBuilder) {
     let go_mod = root.join("go.mod");
     if go_mod.exists() {
-        let evidence_id = builder.add_detected_file(
+        let manifest_evidence = builder.add_detected_file(
             Path::new("go.mod"),
             DetectedFileKind::Manifest,
             "manifest",
             None,
             "Go module manifest detected.",
         );
-        builder.add_package_manager(PackageManagerKind::Go, "go", evidence_id.clone());
-        let module_name = read_go_module_name(&go_mod).unwrap_or_else(|| "go-module".to_string());
-        if module_name == "go-module" {
+        builder.add_package_manager(PackageManagerKind::Go, "go", manifest_evidence.clone());
+        if let Some(module_name) = read_go_module_name(&go_mod) {
+            let test_file_evidence = first_go_test_file(root).map(|path| {
+                builder.add_detected_file(
+                    &path,
+                    DetectedFileKind::TestConfig,
+                    "source_hint",
+                    None,
+                    "Go test file detected.",
+                )
+            });
+            let test_confidence = if test_file_evidence.is_some() {
+                0.95
+            } else {
+                0.85
+            };
+
+            builder.add_component(
+                "component-go-module",
+                &module_name,
+                "go_module",
+                ".",
+                vec![
+                    "go.mod".to_string(),
+                    "go.work".to_string(),
+                    "*.go".to_string(),
+                    "**/*.go".to_string(),
+                ],
+                manifest_evidence.clone(),
+            );
+            builder.add_command(
+                "cmd-go-test",
+                RepoCommandKind::Test,
+                "go test ./...",
+                Some("component-go-module"),
+                test_confidence,
+                test_file_evidence
+                    .clone()
+                    .unwrap_or_else(|| manifest_evidence.clone()),
+            );
+            builder.add_command(
+                "cmd-go-build",
+                RepoCommandKind::Build,
+                "go build ./...",
+                Some("component-go-module"),
+                0.85,
+                manifest_evidence.clone(),
+            );
+            builder.add_test(
+                "test-go-test",
+                "go test",
+                "go test ./...",
+                Some("component-go-module"),
+                test_confidence,
+                test_file_evidence.unwrap_or(manifest_evidence),
+            );
+        } else {
             builder.add_warning(
                 DetectionSeverity::Warning,
-                DetectionCategory::UnsupportedPattern,
-                "go.mod was detected but no module declaration was parsed.",
+                DetectionCategory::MalformedManifest,
+                "go.mod was detected but no module declaration was parsed; Go commands were not inferred.",
                 Some(Path::new("go.mod")),
-                Some(evidence_id.clone()),
+                Some(manifest_evidence),
             );
         }
-        builder.add_component(
-            "component-go-module",
-            &module_name,
-            "go_module",
-            ".",
-            vec![
-                "go.mod".to_string(),
-                "go.work".to_string(),
-                "*.go".to_string(),
-            ],
-            evidence_id.clone(),
-        );
-        builder.add_command(
-            "cmd-go-test",
-            RepoCommandKind::Test,
-            "go test ./...",
-            Some("component-go-module"),
-            0.9,
-            evidence_id.clone(),
-        );
-        builder.add_test(
-            "test-go-test",
-            "go test",
-            "go test ./...",
-            Some("component-go-module"),
-            0.9,
-            evidence_id,
-        );
     }
 
     let go_work = root.join("go.work");
@@ -2039,19 +2094,22 @@ fn detect_go(root: &Path, builder: &mut RepoGraphBuilder) {
             None,
             "Go workspace detected.",
         );
+        let members = read_go_work_members(&go_work);
         builder.add_workspace(
             "workspace-go",
             "go-workspace",
-            Vec::new(),
+            members.clone(),
             evidence_id.clone(),
         );
-        builder.add_warning(
-            DetectionSeverity::Info,
-            DetectionCategory::PartialSupport,
-            "go.work was detected but workspace members are not parsed yet.",
-            Some(Path::new("go.work")),
-            Some(evidence_id),
-        );
+        if members.is_empty() {
+            builder.add_warning(
+                DetectionSeverity::Info,
+                DetectionCategory::PartialSupport,
+                "go.work was detected but no simple use members were parsed.",
+                Some(Path::new("go.work")),
+                Some(evidence_id),
+            );
+        }
     }
 }
 
@@ -2302,7 +2360,7 @@ fn add_pytest(builder: &mut RepoGraphBuilder, evidence_id: String) {
     builder.add_command(
         "cmd-python-pytest",
         RepoCommandKind::Test,
-        "python -m pytest",
+        "pytest",
         Some("component-python-project"),
         0.75,
         evidence_id.clone(),
@@ -2310,11 +2368,100 @@ fn add_pytest(builder: &mut RepoGraphBuilder, evidence_id: String) {
     builder.add_test(
         "test-python-pytest",
         "pytest",
-        "python -m pytest",
+        "pytest",
         Some("component-python-project"),
         0.75,
         evidence_id,
     );
+}
+
+fn pyproject_pytest_field(manifest: &TomlValue) -> Option<String> {
+    if manifest
+        .get("tool")
+        .and_then(|tool| tool.get("pytest"))
+        .is_some()
+    {
+        return Some("tool.pytest".to_string());
+    }
+
+    if toml_array_contains_package(
+        manifest
+            .get("project")
+            .and_then(|project| project.get("dependencies")),
+        "pytest",
+    ) {
+        return Some("project.dependencies.pytest".to_string());
+    }
+
+    if let Some(optional_dependencies) = manifest
+        .get("project")
+        .and_then(|project| project.get("optional-dependencies"))
+        .and_then(TomlValue::as_table)
+    {
+        for (group, dependencies) in optional_dependencies {
+            if toml_array_contains_package(Some(dependencies), "pytest") {
+                return Some(format!("project.optional-dependencies.{group}.pytest"));
+            }
+        }
+    }
+
+    if manifest
+        .get("tool")
+        .and_then(|tool| tool.get("poetry"))
+        .and_then(|poetry| poetry.get("dev-dependencies"))
+        .and_then(|dependencies| dependencies.get("pytest"))
+        .is_some()
+    {
+        return Some("tool.poetry.dev-dependencies.pytest".to_string());
+    }
+
+    if manifest
+        .get("tool")
+        .and_then(|tool| tool.get("poetry"))
+        .and_then(|poetry| poetry.get("group"))
+        .and_then(|group| group.get("dev"))
+        .and_then(|dev| dev.get("dependencies"))
+        .and_then(|dependencies| dependencies.get("pytest"))
+        .is_some()
+    {
+        return Some("tool.poetry.group.dev.dependencies.pytest".to_string());
+    }
+
+    None
+}
+
+fn toml_array_contains_package(value: Option<&TomlValue>, package_name: &str) -> bool {
+    value.and_then(TomlValue::as_array).is_some_and(|items| {
+        items
+            .iter()
+            .any(|item| toml_dependency_matches(item, package_name))
+    })
+}
+
+fn toml_dependency_matches(value: &TomlValue, package_name: &str) -> bool {
+    value
+        .as_str()
+        .is_some_and(|dependency| dependency_name_matches(dependency, package_name))
+}
+
+fn requirements_mentions_pytest(path: &Path) -> bool {
+    let Ok(contents) = fs::read_to_string(path) else {
+        return false;
+    };
+
+    contents.lines().any(|line| {
+        let line = line.split('#').next().unwrap_or("").trim();
+        dependency_name_matches(line, "pytest")
+    })
+}
+
+fn dependency_name_matches(dependency: &str, package_name: &str) -> bool {
+    let dependency = dependency.trim().to_ascii_lowercase();
+    dependency == package_name
+        || dependency
+            .strip_prefix(package_name)
+            .and_then(|rest| rest.chars().next())
+            .is_some_and(|character| matches!(character, '=' | '<' | '>' | '~' | '[' | '!' | ' '))
 }
 
 fn add_command_file_targets(
@@ -2513,6 +2660,101 @@ fn read_go_module_name(path: &Path) -> Option<String> {
     })
 }
 
+fn read_go_work_members(path: &Path) -> Vec<String> {
+    let Ok(contents) = fs::read_to_string(path) else {
+        return Vec::new();
+    };
+
+    let mut members = BTreeSet::new();
+    let mut in_use_block = false;
+
+    for line in contents.lines() {
+        let trimmed = line.split("//").next().unwrap_or("").trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        if trimmed == "use (" {
+            in_use_block = true;
+            continue;
+        }
+
+        if in_use_block && trimmed == ")" {
+            in_use_block = false;
+            continue;
+        }
+
+        if in_use_block {
+            if is_simple_go_work_member(trimmed) {
+                members.insert(trimmed.to_string());
+            }
+            continue;
+        }
+
+        if let Some(member) = trimmed.strip_prefix("use ").map(str::trim) {
+            if is_simple_go_work_member(member) {
+                members.insert(member.to_string());
+            }
+        }
+    }
+
+    members.into_iter().collect()
+}
+
+fn is_simple_go_work_member(member: &str) -> bool {
+    !member.is_empty()
+        && !member.contains('"')
+        && !member.contains(' ')
+        && (member == "." || member.starts_with("./") || member.starts_with("../"))
+}
+
+fn first_go_test_file(root: &Path) -> Option<PathBuf> {
+    first_matching_file(root, root, &|path| {
+        path.file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.ends_with("_test.go"))
+    })
+}
+
+fn first_matching_file(
+    root: &Path,
+    current: &Path,
+    predicate: &impl Fn(&Path) -> bool,
+) -> Option<PathBuf> {
+    let mut entries = fs::read_dir(current).ok()?.flatten().collect::<Vec<_>>();
+    entries.sort_by_key(|entry| entry.file_name());
+
+    for entry in entries {
+        let path = entry.path();
+        let file_name = entry.file_name();
+        let file_name = file_name.to_string_lossy();
+
+        if path.is_dir() {
+            if is_ignored_dir_name(&file_name) {
+                continue;
+            }
+            if let Some(found) = first_matching_file(root, &path, predicate) {
+                return Some(found);
+            }
+        } else if predicate(&path) {
+            return path
+                .strip_prefix(root)
+                .ok()
+                .map(Path::to_path_buf)
+                .or(Some(path));
+        }
+    }
+
+    None
+}
+
+fn is_ignored_dir_name(name: &str) -> bool {
+    matches!(
+        name,
+        ".git" | "node_modules" | "target" | "dist" | "build" | ".cache" | ".venv" | "__pycache__"
+    )
+}
+
 fn cargo_lib_patterns(root: &Path, manifest: &TomlValue) -> Vec<String> {
     if let Some(path) = manifest
         .get("lib")
@@ -2600,6 +2842,10 @@ fn path_matches_pattern(path: &str, pattern: &str) -> bool {
     }
 
     if let Some(suffix) = pattern.strip_prefix("*.") {
+        return path.ends_with(&format!(".{suffix}"));
+    }
+
+    if let Some(suffix) = pattern.strip_prefix("**/*.") {
         return path.ends_with(&format!(".{suffix}"));
     }
 
