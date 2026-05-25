@@ -25,7 +25,7 @@ Research Radar v0.1 tracks public sources that may affect `code-intel-kernel`:
 - code intelligence benchmarks;
 - Codebase-Memory, RIG/SPADE, SWE-bench, and adjacent systems.
 
-The v0.1 scaffold is config and docs only. It does not fetch sources, schedule runs, run scraping automation, or modify runtime code.
+The v0.1 scaffold is config and docs only. R2-A adds a bounded collector for reports/state only; it still does not modify runtime code or implement ideas.
 
 ## Manual Daily Run
 
@@ -39,9 +39,24 @@ The v0.1 scaffold is config and docs only. It does not fetch sources, schedule r
 6. Do not modify source code.
 7. Do not propose an implementation unless the item scores at least 85 and has an available artifact.
 
-For v0.1, run manual dry runs only. Do not add a scheduler or scraper until several dry runs show that source noise and scoring are acceptable.
+For local manual runs, use dry-run first:
 
-The first next step is a manual dry run over 3-5 P0 sources.
+```bash
+python3 research-radar/bin/run_daily.py --dry-run
+python3 research-radar/bin/run_daily.py --write
+python3 research-radar/bin/validate_reports.py
+```
+
+## Codex App Automation
+
+The bounded weekday automation is configured in Codex App, not as a repository workflow. Details are documented in `research-radar/automation.md`.
+
+It may write only:
+
+- `research-radar/reports/**`
+- `research-radar/state/**`
+
+It must never modify runtime code, import external code, create prototypes, commit automatically, or turn report items into implementation tasks.
 
 ## Output Rule
 

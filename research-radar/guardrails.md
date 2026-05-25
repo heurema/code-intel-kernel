@@ -16,6 +16,9 @@ Research Radar is intake, not implementation.
 - Treat external repositories as research input, not dependencies, unless separately approved.
 - Generated experiment proposals must include a stop condition.
 - Generated experiment proposals must include a reason not to implement immediately.
+- Codex App scheduled automation may write only `research-radar/reports/**` and `research-radar/state/**`.
+- Codex App scheduled automation must fail instead of continuing if runtime or configuration files change unexpectedly.
+- Codex App scheduled automation must not commit automatically.
 
 ## Safety Boundaries
 
@@ -23,7 +26,8 @@ Research Radar is intake, not implementation.
 - Do not install dependencies from watched repositories.
 - Do not create patches from watched repositories.
 - Do not use generated code from papers or repos without attribution and license review.
-- Do not turn Research Radar into `where-to-edit`, roadmap automation, or a scheduler.
+- Do not turn Research Radar into `where-to-edit`, roadmap automation, or a repo-owned scheduler.
+- Do not use Research Radar automation to create patches, code-intelligence features, or runtime changes.
 
 ## Human Approval Gate
 

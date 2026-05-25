@@ -3,17 +3,18 @@
 ## Parallel R&D workflow: Research Radar
 
 - Pause feature development unless a Research Radar item produces a human-approved experiment proposal.
-- Keep Phase 3B-B deferred while Research Radar v0.1 is introduced.
-- Keep Research Radar v0.1 documentation/config only:
-  - source manifest;
-  - scoring rubric;
-  - guardrails;
-  - daily digest templates;
-  - Codex prompts for digest and experiment proposal generation.
-- Do not schedule automation yet.
-- Do not fetch live sources as part of scaffold setup.
+- Keep Phase 3B-B deferred while Research Radar automation proves useful.
+- Research Radar R0 is documentation/config.
+- Research Radar R1 is the first manual dry run.
+- Research Radar R2-A is bounded weekday automation:
+  - deterministic public-source collection;
+  - normalized reports/state only;
+  - Codex App scheduled workspace run;
+  - changed-path allowlist limited to `research-radar/reports/**` and `research-radar/state/**`;
+  - no automatic commits by default.
 - Do not import external code.
 - Treat Research Radar output as candidate evidence, not a feature backlog or implementation trigger.
+- Review after 5 scheduled runs before expanding sources or adding LLM review.
 
 ## Phase 0: repo skeleton
 

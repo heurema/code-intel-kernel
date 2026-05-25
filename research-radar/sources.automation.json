@@ -1,0 +1,91 @@
+{
+  "manifest_version": "0.1",
+  "purpose": "Automation-ready Research Radar source subset.",
+  "policy": {
+    "runtime_code_changes_allowed": false,
+    "automated_implementation_allowed": false,
+    "scheduled_automation_enabled": true,
+    "public_sources_only": true,
+    "login_required_scraping_allowed": false,
+    "external_code_import_allowed": false
+  },
+  "placeholders": {
+    "today": "${TODAY}",
+    "today_minus_2d": "${TODAY_MINUS_2D}",
+    "today_minus_7d": "${TODAY_MINUS_7D}",
+    "today_minus_30d": "${TODAY_MINUS_30D}"
+  },
+  "sources": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "type": "github_repo",
+      "cadence": "weekday",
+      "repo": "tree-sitter/tree-sitter",
+      "url": "https://github.com/tree-sitter/tree-sitter",
+      "max_commits": 3,
+      "max_releases": 1,
+      "priority": 72,
+      "affected_module": "SymbolGraph",
+      "license_hint": "MIT"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "type": "github_repo",
+      "cadence": "weekday",
+      "repo": "rust-lang/rust-analyzer",
+      "url": "https://github.com/rust-lang/rust-analyzer",
+      "max_commits": 3,
+      "max_releases": 1,
+      "priority": 76,
+      "affected_module": "LSP Bridge",
+      "license_hint": "Apache-2.0"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "type": "github_repo",
+      "cadence": "weekday",
+      "repo": "DeusData/codebase-memory-mcp",
+      "url": "https://github.com/DeusData/codebase-memory-mcp",
+      "max_commits": 3,
+      "max_releases": 1,
+      "priority": 82,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "license_hint": "MIT"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "type": "github_search",
+      "cadence": "weekday",
+      "query": "(\"code intelligence\" OR \"coding agent\" OR \"repository graph\" OR \"Tree-sitter\") pushed:>=${TODAY_MINUS_7D}",
+      "max_items": 5,
+      "priority": 68,
+      "affected_module": "research only"
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "type": "arxiv_query",
+      "cadence": "weekday",
+      "search_query": "all:\"coding agent\" OR all:\"software engineering agent\" OR all:\"program repair\"",
+      "submitted_after": "${TODAY_MINUS_2D}",
+      "max_items": 5,
+      "priority": 68,
+      "affected_module": "research only"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "type": "arxiv_query",
+      "cadence": "weekday",
+      "search_query": "all:\"code graph\" OR all:\"repository graph\" OR all:\"Tree-sitter\" OR all:\"code intelligence\"",
+      "submitted_after": "${TODAY_MINUS_2D}",
+      "max_items": 5,
+      "priority": 70,
+      "affected_module": "SymbolGraph | SourceEvidence | research only"
+    }
+  ]
+}
