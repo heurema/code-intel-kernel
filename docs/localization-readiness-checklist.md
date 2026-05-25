@@ -1,6 +1,6 @@
 # Localization Readiness Checklist
 
-Status: Phase 2C gate. Current conclusion: `not_ready_for_confident_localization`.
+Status: Phase 2D gate. Current conclusion: `not_ready_for_confident_localization`.
 
 This checklist defines what must be true before `where-to-edit` can return confident file or symbol candidates.
 
@@ -38,7 +38,13 @@ This checklist defines what must be true before `where-to-edit` can return confi
 - [x] SourceEvidenceBundle eval cases pass.
   Evidence: `cargo run --quiet -- eval-fixtures --json`, `source_evidence_cases > 0`, `failed_cases = 0`.
 
-- [ ] Candidate files and symbols are tied to queries by evaluated evidence, not string guessing.
+- [x] Candidate files and symbols include source-to-repo context when path evidence supports it.
+  Evidence: source-evidence eval cases for component/command/test context roles.
+
+- [x] Candidate limits prevent unbounded evidence bundle output.
+  Evidence: eval case `source_evidence_broad_query_limit`; smoke test `source_evidence_broad_query_truncates_candidates`.
+
+- [ ] Candidate files and symbols are tied to queries by semantic/evaluated relevance evidence, not only string matching.
 - [ ] SymbolGraph-to-RepoGraph linking is defined and tested.
 - [ ] Reference/import/call graph decision is made.
 - [ ] LSP diagnostics bridge decision is made.
@@ -50,4 +56,4 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 `not_ready_for_confident_localization`
 
-Phase 2C verifies top-level Rust source facts and adds evidence assembly. It still uses only deterministic string/token matching. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.
+Phase 2D verifies top-level Rust source facts, evidence assembly, source-to-repo context roles, limits, and refusal behavior. It still uses only deterministic string/token matching. That is not enough to decide edit locations. `where-to-edit` must remain `insufficient_evidence`.

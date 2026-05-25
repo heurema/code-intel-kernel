@@ -1,0 +1,26 @@
+{
+  "name": "source_evidence_broad_query_limit",
+  "fixture": ".",
+  "kind": "source_evidence",
+  "query": "repo",
+  "expect": {
+    "status": "partial",
+    "confidence": "low",
+    "candidate_files_contains": ["src/core/repo_graph.rs"],
+    "repo_context_roles_contains": [
+      "containing_component",
+      "verification_command_context",
+      "test_command_context",
+      "impact_context"
+    ],
+    "warnings_contains_categories": [
+      "candidate_limit_exceeded",
+      "query_too_broad",
+      "localization_not_supported"
+    ],
+    "missing_evidence_contains": [
+      "candidate_limit_exceeded",
+      "query_too_broad"
+    ]
+  }
+}

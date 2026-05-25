@@ -1,6 +1,6 @@
 # Source Evidence JSON Contract
 
-Status: Phase 2C prototype contract, version `0.1`.
+Status: Phase 2D prototype contract, version `0.2`.
 
 `source-evidence` assembles evidence from RepoGraph and SymbolGraph-lite for a query. It is read-only and does not identify edit locations.
 
@@ -20,7 +20,7 @@ cargo run --quiet -- source-evidence "top_level_function" --repo tests/fixtures/
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "status": "ok | partial | insufficient_evidence",
   "query": "...",
   "confidence": "high | medium | low | insufficient",
@@ -55,7 +55,7 @@ Forbidden statements:
 
 ## Matching Strategy
 
-Phase 2C uses deterministic local matching only:
+Phase 2D uses deterministic local matching only:
 
 - case-insensitive substring match on source file paths and symbol names;
 - token overlap between query terms and file/symbol names;
@@ -89,7 +89,7 @@ Each candidate symbol has:
 - `reason`
 - `evidence_ids`
 
-Only Rust top-level SymbolGraph-lite facts are available in Phase 2C.
+Only Rust top-level SymbolGraph-lite facts are available in Phase 2D.
 
 ## repo_context
 
@@ -99,7 +99,18 @@ Current kinds:
 
 - `component`
 - `command`
+- `workspace`
 - `test`
+
+Each context item includes a `role`:
+
+- `containing_component`
+- `containing_workspace`
+- `verification_command_context`
+- `test_command_context`
+- `dependency_context`
+- `impact_context`
+- `ambiguous_context`
 
 Repo context items are validation context, not edit instructions.
 
@@ -108,10 +119,15 @@ Repo context items are validation context, not edit instructions.
 Known categories:
 
 - `ambiguous_query`
+- `candidate_limit_exceeded`
 - `insufficient_evidence_for_localization`
+- `localization_not_supported`
 - `multiple_candidates`
+- `no_repo_component_context`
 - `no_matching_source_files`
 - `no_matching_source_symbols`
+- `parse_error_present`
+- `query_too_broad`
 - `repo_graph_context_unavailable`
 - `symbol_graph_parse_warning`
 - `unsupported_language`
@@ -120,19 +136,45 @@ Known categories:
 
 Known categories:
 
-- `lsp_diagnostics`
-- `localization_evaluation`
+- `ambiguous_source_match`
+- `candidate_limit_exceeded`
+- `localization_not_supported`
+- `no_call_graph`
+- `no_lsp_diagnostics`
+- `no_repo_component_context`
+- `no_source_match`
+- `no_symbol_reference_layer`
+- `parse_error_present`
 - `query_relevance`
-- `reference_graph`
-- `repo_context`
-- `source_match`
+- `query_too_broad`
+- `unsupported_language`
 
 Missing evidence is first-class output. It should not be converted into guesses.
 
 ## Contract Versions
 
-- `source_evidence`: `0.1`
+- `source_evidence`: `0.2`
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`
 - `symbols`: unchanged, `0.1`
-- `eval`: `0.3` when source-evidence eval cases are present
+- `eval`: `0.3`
+
+## Candidate Limits
+
+Phase 2D caps output deterministically:
+
+- max candidate files: 8
+- max candidate symbols: 12
+- max repo context items: 12
+
+When a limit is exceeded, output is truncated after deterministic ranking and includes `candidate_limit_exceeded`.
+
+## Ranking
+
+Ranking is deterministic:
+
+- exact symbol name match;
+- exact file path match;
+- substring match;
+- token overlap;
+- stable tie-break by path, name, and ID.

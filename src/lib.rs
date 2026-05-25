@@ -25,8 +25,8 @@ pub use crate::core::source_evidence::{
     build_source_evidence_bundle, build_source_evidence_bundle_from_graphs,
     source_evidence_bundle_evidence_valid, BundleConfidence, BundleStatus, BundleWarning,
     BundleWarningCategory, CandidateFile, CandidateSymbol, MissingEvidence,
-    MissingEvidenceCategory, RepoContextItem, RepoContextKind, SourceEvidenceBundle,
-    SOURCE_EVIDENCE_CONTRACT_VERSION,
+    MissingEvidenceCategory, RepoContextItem, RepoContextKind, RepoContextRole,
+    SourceEvidenceBundle, SOURCE_EVIDENCE_CONTRACT_VERSION,
 };
 pub use crate::core::symbol_graph::{
     build_symbol_graph, symbol_graph_evidence_valid, ParseStatus, SourceFile, SourceLanguage,

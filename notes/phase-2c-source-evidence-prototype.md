@@ -31,7 +31,7 @@ It does not use embeddings, LLM scoring, fuzzy semantic inference, source parsin
 - `impact`: `0.2`
 - `eval`: `0.3`
 - `symbols`: `0.1`
-- `source_evidence`: `0.1`
+- `source_evidence`: `0.1` in Phase 2C, bumped to `0.2` in Phase 2D
 
 ## Localization Readiness
 

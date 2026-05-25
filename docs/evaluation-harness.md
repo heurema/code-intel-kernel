@@ -112,8 +112,8 @@ Source-evidence cases can assert candidate files, candidate symbols, status, con
     "candidate_symbols_contains": [
       { "name": "top_level_function", "kind": "function" }
     ],
-    "warnings_contains_categories": ["insufficient_evidence_for_localization"],
-    "missing_evidence_contains": ["reference_graph"]
+    "warnings_contains_categories": ["localization_not_supported"],
+    "missing_evidence_contains": ["no_symbol_reference_layer"]
   }
 }
 ```
@@ -161,6 +161,7 @@ The initial case set covers:
 - Rust malformed source parse warning;
 - ignored source paths for SymbolGraph-lite.
 - SourceEvidenceBundle function match, file match, and no-match refusal.
+- SourceEvidenceBundle broad-query candidate limit and malformed-source refusal.
 
 ## Negative Case Rationale
 

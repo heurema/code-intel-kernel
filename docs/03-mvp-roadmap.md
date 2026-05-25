@@ -178,7 +178,7 @@ Assemble query, RepoGraph context, SymbolGraph-lite facts, evidence, limitations
 ### Acceptance criteria
 
 - `source-evidence` CLI returns valid JSON.
-- `source_evidence` contract version is `0.1`.
+- `source_evidence` contract version is `0.2` after Phase 2D context-role hardening.
 - Eval includes source-evidence cases.
 - Candidate files and symbols are evidence-backed.
 - No output claims edit locations.

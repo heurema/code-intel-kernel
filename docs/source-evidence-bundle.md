@@ -1,16 +1,16 @@
 # SourceEvidenceBundle Contract
 
-Status: Phase 2C prototype contract. Active as read-only evidence assembly, not localization.
+Status: Phase 2D prototype contract. Active as read-only evidence assembly, not localization.
 
 A SourceEvidenceBundle is a source-level evidence packet for future review, localization, and impact reasoning. It combines candidate source files, candidate symbols, source evidence, and relevant RepoGraph context while remaining honest about missing evidence.
 
-Phase 2C implements this contract through `source-evidence`. It does not connect SymbolGraph-lite or SourceEvidenceBundle to `where-to-edit`.
+Phase 2C implements this contract through `source-evidence`. Phase 2D hardens source-to-repo context roles, candidate limits, ranking, and refusal taxonomy. It does not connect SymbolGraph-lite or SourceEvidenceBundle to `where-to-edit`.
 
 ## Shape
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "status": "ok | partial | insufficient_evidence",
   "query": "change login validation copy",
   "candidate_files": [],
@@ -76,6 +76,18 @@ Source evidence should include:
 - source range evidence;
 - warning evidence when present.
 
+## Context Roles
+
+Repo context items include roles:
+
+- `containing_component`
+- `containing_workspace`
+- `verification_command_context`
+- `test_command_context`
+- `dependency_context`
+- `impact_context`
+- `ambiguous_context`
+
 Every candidate file and symbol must reference existing evidence IDs.
 
 ## Status Rules
@@ -84,7 +96,7 @@ Every candidate file and symbol must reference existing evidence IDs.
 - `partial`: some useful source evidence exists, but important evidence is missing.
 - `insufficient_evidence`: the bundle cannot support the requested use without guessing.
 
-For edit localization, Phase 2C still expects `insufficient_evidence`.
+For edit localization, Phase 2D still expects `insufficient_evidence`.
 
 ## Missing Evidence
 

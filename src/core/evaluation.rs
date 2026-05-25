@@ -4,7 +4,7 @@ use crate::core::repo_graph::{
 };
 use crate::core::source_evidence::{
     build_source_evidence_bundle, source_evidence_bundle_evidence_valid, BundleWarning,
-    BundleWarningCategory, CandidateSymbol, SourceEvidenceBundle,
+    BundleWarningCategory, CandidateSymbol, RepoContextRole, SourceEvidenceBundle,
 };
 use crate::core::symbol_graph::{
     build_symbol_graph, symbol_graph_evidence_valid, SourceSymbol, SymbolGraph, SymbolKind,
@@ -72,6 +72,10 @@ pub struct EvalExpect {
     pub candidate_files_contains: Vec<String>,
     #[serde(default)]
     pub candidate_symbols_contains: Vec<ExpectedSymbol>,
+    #[serde(default)]
+    pub repo_context_contains: Vec<String>,
+    #[serde(default)]
+    pub repo_context_roles_contains: Vec<String>,
     #[serde(default)]
     pub missing_evidence_contains: Vec<String>,
     pub max_impacted_components: Option<usize>,
@@ -306,6 +310,16 @@ fn check_source_evidence_expectations(
         .iter()
         .map(|candidate| candidate.path.as_str())
         .collect::<Vec<_>>();
+    let repo_context = bundle
+        .repo_context
+        .iter()
+        .map(|context| context.label.as_str())
+        .collect::<Vec<_>>();
+    let repo_context_roles = bundle
+        .repo_context
+        .iter()
+        .map(|context| repo_context_role_name(&context.role))
+        .collect::<Vec<_>>();
     let warning_categories = source_evidence_warning_categories(&bundle.warnings);
 
     check_contains_all(
@@ -322,6 +336,24 @@ fn check_source_evidence_expectations(
         "candidate_symbols_contains",
         &case.expect.candidate_symbols_contains,
         &bundle.candidate_symbols,
+        counters,
+        failures,
+    );
+    check_contains_all(
+        case,
+        "repo_context_contains",
+        &case.expect.repo_context_contains,
+        &repo_context,
+        "false_narrow",
+        counters,
+        failures,
+    );
+    check_contains_all(
+        case,
+        "repo_context_roles_contains",
+        &case.expect.repo_context_roles_contains,
+        &repo_context_roles,
+        "false_narrow",
         counters,
         failures,
     );
@@ -1103,15 +1135,32 @@ fn symbol_category_name(category: &SymbolWarningCategory) -> &'static str {
 fn source_evidence_category_name(category: &BundleWarningCategory) -> &'static str {
     match category {
         BundleWarningCategory::AmbiguousQuery => "ambiguous_query",
+        BundleWarningCategory::CandidateLimitExceeded => "candidate_limit_exceeded",
         BundleWarningCategory::InsufficientEvidenceForLocalization => {
             "insufficient_evidence_for_localization"
         }
+        BundleWarningCategory::LocalizationNotSupported => "localization_not_supported",
         BundleWarningCategory::MultipleCandidates => "multiple_candidates",
+        BundleWarningCategory::NoRepoComponentContext => "no_repo_component_context",
         BundleWarningCategory::NoMatchingSourceFiles => "no_matching_source_files",
         BundleWarningCategory::NoMatchingSourceSymbols => "no_matching_source_symbols",
+        BundleWarningCategory::ParseErrorPresent => "parse_error_present",
+        BundleWarningCategory::QueryTooBroad => "query_too_broad",
         BundleWarningCategory::RepoGraphContextUnavailable => "repo_graph_context_unavailable",
         BundleWarningCategory::SymbolGraphParseWarning => "symbol_graph_parse_warning",
         BundleWarningCategory::UnsupportedLanguage => "unsupported_language",
+    }
+}
+
+fn repo_context_role_name(role: &RepoContextRole) -> &'static str {
+    match role {
+        RepoContextRole::AmbiguousContext => "ambiguous_context",
+        RepoContextRole::ContainingComponent => "containing_component",
+        RepoContextRole::ContainingWorkspace => "containing_workspace",
+        RepoContextRole::DependencyContext => "dependency_context",
+        RepoContextRole::ImpactContext => "impact_context",
+        RepoContextRole::TestCommandContext => "test_command_context",
+        RepoContextRole::VerificationCommandContext => "verification_command_context",
     }
 }
 

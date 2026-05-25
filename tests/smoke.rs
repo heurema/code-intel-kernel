@@ -4,10 +4,10 @@ use code_intel_kernel::{
     source_evidence_bundle_evidence_valid, symbol_graph_evidence_valid, BundleConfidence,
     BundleStatus, BundleWarningCategory, DetectionCategory, DetectionSeverity, EvalCase,
     EvalCaseKind, EvalExpect, EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport,
-    ImpactScope, ImpactStatus, KernelProfile, ParseStatus, RelationshipKind, RepoInspection,
-    SourceEvidenceBundle, SymbolGraph, SymbolKind, SymbolWarningCategory, EVAL_CONTRACT_VERSION,
-    IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION, SOURCE_EVIDENCE_CONTRACT_VERSION,
-    SYMBOLS_CONTRACT_VERSION,
+    ImpactScope, ImpactStatus, KernelProfile, ParseStatus, RelationshipKind, RepoContextRole,
+    RepoInspection, SourceEvidenceBundle, SymbolGraph, SymbolKind, SymbolWarningCategory,
+    EVAL_CONTRACT_VERSION, IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
+    SOURCE_EVIDENCE_CONTRACT_VERSION, SYMBOLS_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
 use std::process::Command;
@@ -862,7 +862,7 @@ fn source_evidence_exact_symbol_returns_evidence_candidate() {
 
     assert_eq!(bundle.contract_version, SOURCE_EVIDENCE_CONTRACT_VERSION);
     assert_eq!(bundle.status, BundleStatus::Partial);
-    assert_eq!(bundle.confidence, BundleConfidence::Medium);
+    assert_eq!(bundle.confidence, BundleConfidence::High);
     assert!(bundle
         .candidate_symbols
         .iter()
@@ -874,9 +874,14 @@ fn source_evidence_exact_symbol_returns_evidence_candidate() {
         .iter()
         .any(|file| file.path == "src/lib.rs" && !file.evidence_ids.is_empty()));
     assert!(source_evidence_bundle_evidence_valid(&bundle));
-    assert!(bundle.refusal_reason.as_deref().is_some_and(|reason| {
-        reason.contains("evidence assembly") || reason.contains("does not identify edit locations")
-    }));
+    assert!(bundle
+        .repo_context
+        .iter()
+        .any(|context| context.role == RepoContextRole::ContainingComponent));
+    assert!(bundle
+        .refusal_reason
+        .as_deref()
+        .is_some_and(|reason| reason.contains("localization_not_supported")));
 }
 
 #[test]
@@ -904,6 +909,10 @@ fn source_evidence_no_match_returns_insufficient_evidence() {
         .warnings
         .iter()
         .any(|warning| warning.category == BundleWarningCategory::NoMatchingSourceSymbols));
+    assert!(bundle
+        .refusal_reason
+        .as_deref()
+        .is_some_and(|reason| reason.contains("no_source_match")));
     assert!(source_evidence_bundle_evidence_valid(&bundle));
 }
 
@@ -920,6 +929,20 @@ fn source_evidence_ambiguous_query_returns_partial_with_warning() {
 }
 
 #[test]
+fn source_evidence_broad_query_truncates_candidates() {
+    let bundle = build_source_evidence_bundle(".", "repo");
+
+    assert_eq!(bundle.status, BundleStatus::Partial);
+    assert!(bundle.candidate_files.len() <= 8);
+    assert!(bundle.candidate_symbols.len() <= 12);
+    assert!(bundle.repo_context.len() <= 12);
+    assert!(bundle
+        .warnings
+        .iter()
+        .any(|warning| warning.category == BundleWarningCategory::CandidateLimitExceeded));
+}
+
+#[test]
 fn source_evidence_malformed_source_warns_without_panic() {
     let bundle = build_source_evidence_bundle("tests/fixtures/rust-symbols-malformed", "broken");
 
@@ -927,7 +950,7 @@ fn source_evidence_malformed_source_warns_without_panic() {
     assert!(bundle
         .warnings
         .iter()
-        .any(|warning| warning.category == BundleWarningCategory::SymbolGraphParseWarning));
+        .any(|warning| warning.category == BundleWarningCategory::ParseErrorPresent));
     assert!(source_evidence_bundle_evidence_valid(&bundle));
 }
 
@@ -955,6 +978,27 @@ fn source_evidence_output_is_deterministic() {
     let second = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "widget");
 
     assert_eq!(first, second);
+}
+
+#[test]
+fn source_evidence_output_has_no_edit_target_language() {
+    let bundle = build_source_evidence_bundle("tests/fixtures/rust-symbols-basic", "widget");
+    let json = serde_json::to_string(&bundle).expect("bundle should serialize");
+
+    for forbidden in [
+        "edit this",
+        "edit here",
+        "target_edit",
+        "edit_location",
+        "apply patch",
+        "change this",
+        "correct edit location",
+    ] {
+        assert!(
+            !json.contains(forbidden),
+            "bundle output should not contain edit-target phrase: {forbidden}"
+        );
+    }
 }
 
 #[test]
@@ -990,7 +1034,7 @@ fn source_evidence_cli_output_is_valid_json() {
 fn evaluator_loads_fixture_cases() {
     let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
 
-    assert!(cases.len() >= 23);
+    assert!(cases.len() >= 25);
     assert!(cases
         .iter()
         .any(|case| case.name == "cargo_workspace_dependency_impact"));
@@ -1012,7 +1056,7 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
 
     assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
     assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
-    assert!(report.total_cases >= 23);
+    assert!(report.total_cases >= 25);
     assert!(report.inspect_cases > 0);
     assert!(report.impact_cases > 0);
     assert!(report.symbol_cases > 0);
@@ -1098,6 +1142,8 @@ fn source_evidence_eval_cases_pass() {
         "source_evidence_function_match",
         "source_evidence_file_match",
         "source_evidence_no_match",
+        "source_evidence_broad_query_limit",
+        "source_evidence_malformed_source",
     ] {
         let result = report
             .cases

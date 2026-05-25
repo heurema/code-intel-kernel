@@ -1,0 +1,19 @@
+{
+  "name": "source_evidence_malformed_source",
+  "fixture": "tests/fixtures/rust-symbols-malformed",
+  "kind": "source_evidence",
+  "query": "broken",
+  "expect": {
+    "status": "insufficient_evidence",
+    "confidence": "insufficient",
+    "warnings_contains_categories": [
+      "parse_error_present",
+      "no_matching_source_symbols",
+      "localization_not_supported"
+    ],
+    "missing_evidence_contains": [
+      "parse_error_present",
+      "no_source_match"
+    ]
+  }
+}
