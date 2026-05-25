@@ -1,0 +1,11 @@
+{
+  "name": "minimal_rust_inspect",
+  "fixture": "tests/fixtures/minimal-cargo",
+  "kind": "inspect",
+  "expect": {
+    "components_contains": ["minimal-cargo"],
+    "commands_contains": ["cargo test", "cargo check"],
+    "tests_contains": ["cargo test"],
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

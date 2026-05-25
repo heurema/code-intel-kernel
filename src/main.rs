@@ -1,5 +1,6 @@
 use code_intel_kernel::{
-    analyze_impact, create_evidence_bundle, inspect_repo, EvidenceRequest, KernelProfile,
+    analyze_impact, create_evidence_bundle, inspect_repo, run_fixture_evaluation, EvidenceRequest,
+    KernelProfile,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -29,6 +30,20 @@ fn run(args: Vec<String>) -> i32 {
             print_json(&report);
             0
         }
+        Some("eval-fixtures") => match run_fixture_evaluation("tests/eval/cases") {
+            Ok(report) => {
+                print_json(&report);
+                if report.failed_cases == 0 {
+                    0
+                } else {
+                    7
+                }
+            }
+            Err(error) => {
+                eprintln!("{error}");
+                7
+            }
+        },
         Some("where-to-edit") => {
             let task = args
                 .iter()
@@ -120,7 +135,7 @@ fn split_changed_files(value: &str) -> Vec<String> {
 
 fn print_help() {
     println!(
-        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nThis is a documentation-first Rust skeleton. RepoGraph impact is repository/build/test-level only; SymbolGraph, LSP, SQLite, MCP, EvidenceBundle, and ProcessReward implementations are intentionally deferred."
+        "code-intel\n\nUsage:\n  code-intel inspect <repo-path> [--json]\n  code-intel repo-map [--json]\n  code-intel impact <changed-file>... [--json]\n  code-intel impact --changed-files src/main.rs,Cargo.toml [--json]\n  code-intel eval-fixtures [--json]\n  code-intel where-to-edit \"<task>\" [--profile=strict|standard|prototype|research|custom] [--json]\n\nThis is a documentation-first Rust skeleton. RepoGraph impact is repository/build/test-level only; SymbolGraph, LSP, SQLite, MCP, EvidenceBundle, and ProcessReward implementations are intentionally deferred."
     );
 }
 

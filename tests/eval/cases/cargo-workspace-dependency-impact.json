@@ -1,0 +1,16 @@
+{
+  "name": "cargo_workspace_dependency_impact",
+  "fixture": "tests/fixtures/cargo-workspace-deps",
+  "kind": "impact",
+  "changed_files": ["crates/b/src/lib.rs"],
+  "expect": {
+    "status": "partial",
+    "confidence": "medium",
+    "impact_scope": "mixed",
+    "components_contains": ["b", "a"],
+    "commands_contains": ["cargo test", "cargo check"],
+    "tests_contains": ["cargo test"],
+    "max_impacted_components": 2,
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

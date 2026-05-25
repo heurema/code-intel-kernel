@@ -1,0 +1,11 @@
+{
+  "name": "cargo_workspace_dependency_inspect",
+  "fixture": "tests/fixtures/cargo-workspace-deps",
+  "kind": "inspect",
+  "expect": {
+    "components_contains": ["a", "b"],
+    "commands_contains": ["cargo test", "cargo check"],
+    "tests_contains": ["cargo test"],
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

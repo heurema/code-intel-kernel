@@ -1,0 +1,10 @@
+{
+  "name": "justfile_inspect",
+  "fixture": "tests/fixtures/generic-just",
+  "kind": "inspect",
+  "expect": {
+    "commands_contains": ["just test", "just check", "just build", "just lint", "just format"],
+    "tests_contains": ["just test"],
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

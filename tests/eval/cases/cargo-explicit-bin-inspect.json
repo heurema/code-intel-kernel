@@ -1,0 +1,11 @@
+{
+  "name": "cargo_explicit_bin_inspect",
+  "fixture": "tests/fixtures/cargo-explicit-bin",
+  "kind": "inspect",
+  "expect": {
+    "components_contains": ["cargo-explicit-bin", "worker"],
+    "commands_contains": ["cargo test", "cargo check"],
+    "tests_contains": ["cargo test"],
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

@@ -59,6 +59,21 @@
 - Track false broad versus false narrow impact behavior.
 - Use this before deciding whether to start SymbolGraph.
 
+## Phase 1G: RepoGraph decision gate
+
+- Review the eval report before adding source-level intelligence.
+- Fix RepoGraph extraction or impact behavior first if eval failures show false narrow, unexpected warnings, or evidence gaps.
+- Document acceptable false broad cases before moving on.
+- Keep `where-to-edit` as `insufficient_evidence`.
+- Open Phase 2A only when the readiness checklist passes:
+  - inspect eval cases pass;
+  - impact eval cases pass;
+  - false narrow count is zero on core fixtures;
+  - false broad cases are documented and acceptable;
+  - evidence coverage is 100%;
+  - warnings are structured and expected;
+  - output is deterministic across repeated runs.
+
 ## Phase 2: SymbolGraph MVP
 
 - Add Tree-sitter extraction for TypeScript, TSX, JavaScript, and Python.

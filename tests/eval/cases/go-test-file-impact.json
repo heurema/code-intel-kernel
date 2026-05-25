@@ -1,0 +1,16 @@
+{
+  "name": "go_test_file_impact",
+  "fixture": "tests/fixtures/go-module-with-tests",
+  "kind": "impact",
+  "changed_files": ["foo_test.go"],
+  "expect": {
+    "status": "partial",
+    "confidence": "high",
+    "impact_scope": "targeted",
+    "components_contains": ["example.com/go-with-tests"],
+    "commands_contains": ["go test ./...", "go build ./..."],
+    "tests_contains": ["go test ./..."],
+    "max_impacted_components": 1,
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

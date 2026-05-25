@@ -1,0 +1,9 @@
+{
+  "name": "malformed_pyproject_warning",
+  "fixture": "tests/fixtures/python-malformed-pyproject",
+  "kind": "inspect",
+  "expect": {
+    "warnings_contains_categories": ["malformed_manifest"],
+    "forbidden_components_contains": ["broken"]
+  }
+}

@@ -1,8 +1,9 @@
 use code_intel_kernel::{
-    analyze_impact, create_evidence_bundle, inspect_repo, DetectionCategory, DetectionSeverity,
-    EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport, ImpactScope, ImpactStatus,
-    KernelProfile, RelationshipKind, RepoInspection, IMPACT_CONTRACT_VERSION,
-    INSPECT_CONTRACT_VERSION,
+    analyze_impact, create_evidence_bundle, evaluate_cases, inspect_repo, load_eval_cases,
+    run_fixture_evaluation, DetectionCategory, DetectionSeverity, EvalCase, EvalCaseKind,
+    EvalExpect, EvidenceRequest, ImpactConfidence, ImpactKind, ImpactReport, ImpactScope,
+    ImpactStatus, KernelProfile, RelationshipKind, RepoInspection, EVAL_CONTRACT_VERSION,
+    IMPACT_CONTRACT_VERSION, INSPECT_CONTRACT_VERSION,
 };
 use serde_json::Value as JsonValue;
 use std::process::Command;
@@ -728,6 +729,108 @@ fn where_to_edit_remains_insufficient_evidence_placeholder() {
     assert!(json["data"]["symbols"]
         .as_array()
         .is_some_and(Vec::is_empty));
+}
+
+#[test]
+fn evaluator_loads_fixture_cases() {
+    let cases = load_eval_cases("tests/eval/cases").expect("eval cases should load");
+
+    assert!(cases.len() >= 13);
+    assert!(cases
+        .iter()
+        .any(|case| case.name == "cargo_workspace_dependency_impact"));
+    assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Inspect));
+    assert!(cases.iter().any(|case| case.kind == EvalCaseKind::Impact));
+}
+
+#[test]
+fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
+    let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
+    let json = serde_json::to_value(&report).expect("eval report should serialize");
+
+    assert_eq!(report.eval_contract_version, EVAL_CONTRACT_VERSION);
+    assert_eq!(report.failed_cases, 0, "{:#?}", report.failures);
+    assert_eq!(report.total_cases, 13);
+    assert!(report.inspect_cases > 0);
+    assert!(report.impact_cases > 0);
+    assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
+    assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
+    assert!(json.get("metrics").is_some());
+}
+
+#[test]
+fn eval_fixtures_cli_output_is_valid_json() {
+    let binary = env!("CARGO_BIN_EXE_code-intel");
+    let output = Command::new(binary)
+        .args(["eval-fixtures", "--json"])
+        .output()
+        .expect("eval-fixtures command should run");
+
+    assert!(
+        output.status.success(),
+        "eval-fixtures command failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let json: JsonValue =
+        serde_json::from_slice(&output.stdout).expect("eval-fixtures output should be JSON");
+    assert_eq!(json["eval_contract_version"], EVAL_CONTRACT_VERSION);
+    assert_eq!(json["failed_cases"], 0);
+    assert!(json.get("metrics").is_some());
+}
+
+#[test]
+fn evaluator_report_detects_evidence_and_deterministic_checks() {
+    let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
+
+    assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
+    assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
+    assert_eq!(report.metrics.false_narrow_count, 0);
+    assert_eq!(report.metrics.false_broad_count, 0);
+}
+
+#[test]
+fn evaluator_reports_deliberate_false_narrow() {
+    let report = evaluate_cases(vec![EvalCase {
+        name: "deliberate_false_narrow".to_string(),
+        fixture: "tests/fixtures/minimal-cargo".to_string(),
+        kind: EvalCaseKind::Inspect,
+        changed_files: Vec::new(),
+        expect: EvalExpect {
+            components_contains: vec!["missing-component".to_string()],
+            ..EvalExpect::default()
+        },
+    }])
+    .expect("deliberately failing eval case should still produce a report");
+
+    assert_eq!(report.failed_cases, 1);
+    assert_eq!(report.metrics.false_narrow_count, 1);
+    assert!(report
+        .failures
+        .iter()
+        .any(|failure| failure.category == "false_narrow"));
+}
+
+#[test]
+fn evaluator_reports_deliberate_false_broad() {
+    let report = evaluate_cases(vec![EvalCase {
+        name: "deliberate_false_broad".to_string(),
+        fixture: "tests/fixtures/minimal-cargo".to_string(),
+        kind: EvalCaseKind::Impact,
+        changed_files: vec!["Cargo.toml".to_string()],
+        expect: EvalExpect {
+            max_impacted_components: Some(0),
+            ..EvalExpect::default()
+        },
+    }])
+    .expect("deliberately broad eval case should still produce a report");
+
+    assert_eq!(report.failed_cases, 1);
+    assert_eq!(report.metrics.false_broad_count, 1);
+    assert!(report
+        .failures
+        .iter()
+        .any(|failure| failure.category == "false_broad"));
 }
 
 fn assert_all_evidence_refs_exist(graph: &RepoInspection) {

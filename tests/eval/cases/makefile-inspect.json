@@ -1,0 +1,10 @@
+{
+  "name": "makefile_inspect",
+  "fixture": "tests/fixtures/generic-make",
+  "kind": "inspect",
+  "expect": {
+    "commands_contains": ["make test", "make check", "make build", "make lint", "make fmt"],
+    "tests_contains": ["make test"],
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

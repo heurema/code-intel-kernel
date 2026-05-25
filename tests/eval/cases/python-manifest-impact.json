@@ -1,0 +1,16 @@
+{
+  "name": "python_manifest_impact",
+  "fixture": "tests/fixtures/python-pytest-evidence",
+  "kind": "impact",
+  "changed_files": ["pyproject.toml"],
+  "expect": {
+    "status": "partial",
+    "confidence": "high",
+    "impact_scope": "broad",
+    "components_contains": ["python-pytest-evidence"],
+    "commands_contains": ["pytest"],
+    "tests_contains": ["pytest"],
+    "max_impacted_components": 1,
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}

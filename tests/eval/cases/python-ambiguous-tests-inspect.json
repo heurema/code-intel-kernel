@@ -1,0 +1,11 @@
+{
+  "name": "python_ambiguous_tests_inspect",
+  "fixture": "tests/fixtures/python-tests-ambiguous",
+  "kind": "inspect",
+  "expect": {
+    "components_contains": ["python-tests-ambiguous"],
+    "warnings_contains_categories": ["ambiguous_detection"],
+    "forbidden_commands_contains": ["pytest"],
+    "forbidden_tests_contains": ["pytest"]
+  }
+}

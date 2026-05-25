@@ -2,6 +2,10 @@ pub mod adapters;
 pub mod core;
 pub mod storage;
 
+pub use crate::core::evaluation::{
+    evaluate_cases, load_eval_cases, run_fixture_evaluation, EvalCase, EvalCaseKind,
+    EvalCaseResult, EvalExpect, EvalFailure, EvalMetrics, EvaluationReport, EVAL_CONTRACT_VERSION,
+};
 pub use crate::core::evidence::{
     create_evidence_bundle, EvidenceBundle, EvidenceCommand, EvidenceFile, EvidenceRequest,
     KernelProfile,

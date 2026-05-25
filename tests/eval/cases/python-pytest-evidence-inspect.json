@@ -1,0 +1,11 @@
+{
+  "name": "python_pytest_evidence_inspect",
+  "fixture": "tests/fixtures/python-pytest-evidence",
+  "kind": "inspect",
+  "expect": {
+    "components_contains": ["python-pytest-evidence"],
+    "commands_contains": ["pytest"],
+    "tests_contains": ["pytest"],
+    "warnings_not_contains_categories": ["malformed_manifest", "ambiguous_detection"]
+  }
+}

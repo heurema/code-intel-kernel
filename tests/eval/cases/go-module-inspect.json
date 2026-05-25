@@ -1,0 +1,11 @@
+{
+  "name": "go_module_inspect",
+  "fixture": "tests/fixtures/go-module-basic",
+  "kind": "inspect",
+  "expect": {
+    "components_contains": ["example.com/go-basic"],
+    "commands_contains": ["go test ./...", "go build ./..."],
+    "tests_contains": ["go test ./..."],
+    "warnings_not_contains_categories": ["malformed_manifest"]
+  }
+}
