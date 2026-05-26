@@ -102,6 +102,22 @@ This checklist defines what must be true before `where-to-edit` can return confi
 - [ ] LSP facts are integrated into SourceEvidence as evidence, not edit targets.
 - [ ] A localization-specific adversarial gate passes after LSP evidence exists.
 
+## Context Pack Boundary
+
+Context Pack is a future context assembly idea, not a localization milestone.
+
+Before any Context Pack implementation exists, it must have eval coverage proving that output remains contextual:
+
+- [ ] Token budget measurement exists.
+- [ ] Context Pack compactness is measured.
+- [ ] Evidence coverage is measured by layer.
+- [ ] No edit-target-language tests cover Context Pack output.
+- [ ] Ambiguity and refusal tests cover Context Pack output.
+- [ ] Convergence and disagreement reporting is tested.
+- [ ] Comparison against raw file exploration exists.
+
+Even if Context Pack output is available, it must not satisfy localization readiness by itself. `where-to-edit` remains `insufficient_evidence` until the dedicated localization gate passes.
+
 ## Conclusion
 
 `not_ready_for_confident_localization`

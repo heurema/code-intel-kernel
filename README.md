@@ -12,6 +12,7 @@ It is not an IDE, agent, MCP server, vector database, or edit planner.
 - **SymbolGraph-lite:** source-level facts with deterministic IDs and evidence.
 - **SourceEvidence:** evidence assembly for queries, not edit localization.
 - **SourceContext:** bounded read-only source slices from explicit selectors.
+- **Context Pack (draft):** future token-efficient context assembly, not localization or planning.
 - **Evaluation:** fixture-based checks for evidence coverage, deterministic output, and refusal behavior.
 - **Refusal:** missing evidence is a first-class result, not a reason to guess.
 
@@ -40,6 +41,8 @@ Important docs:
 - `docs/symbolgraph-json-contract.md`
 - `docs/source-evidence-json-contract.md`
 - `docs/source-context-json-contract.md`
+- `docs/context-pack-design.md`
+- `docs/context-pack-json-contract-draft.md`
 - `docs/evaluation-harness.md`
 - `docs/repo-vs-symbol-graph-boundary.md`
 

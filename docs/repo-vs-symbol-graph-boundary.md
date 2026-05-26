@@ -43,6 +43,8 @@ It still does not own calls, references, imports/exports, LSP diagnostics, or ed
 
 Phase 2B adds evaluation coverage for SymbolGraph-lite. Phase 2C adds SourceEvidenceBundle as read-only evidence assembly. Phase 2D hardens source-to-repo context roles and refusal behavior. Phase 2E adds SourceContext as explicit-selector, read-only source slices. Phase 2F adds selector hints from SourceEvidence to SourceContext. Phase 2G adds adversarial refusal cases for duplicate symbols, broad/reference-style queries, unsupported language input, and path safety. None of these move edit localization into SymbolGraph.
 
+A future Context Pack layer may compose RepoGraph, Impact, SymbolGraph-lite, SourceEvidence, SourceContext selectors/slices, and LSP diagnostics into token-efficient context for other agents or humans. Context Pack must stay read-only and evidence-backed. It is not localization, not a SourceEvidence replacement, and not a decision layer.
+
 ## Explicit Non-Goals
 
 RepoGraph must not:
@@ -64,11 +66,26 @@ SourceContext owns bounded source snippets for explicit file or symbol selectors
 
 LSP should own diagnostics, definitions, references, and document-symbol facts only after Phase 3B implements a read-only bridge. LSP locations are evidence, not edit targets.
 
+Context Pack, if added later, must not own new repository facts. It may only assemble facts from owning layers and report known facts, unknowns, ambiguities, missing evidence, convergence, and disagreements. Its field language should avoid decisions: `context_files`, `observed_symbols`, `existing_capabilities`, `coverage`, and `evidence_channels`.
+
+Context Pack must not provide:
+
+- edit locations;
+- edit targets;
+- patches;
+- plans;
+- PRs;
+- root-cause claims;
+- recommended changes;
+- `use this function` or `modify this symbol` guidance.
+
 ## Interaction Model
 
 RepoGraph should be computed first. SymbolGraph can attach source facts to RepoGraph components when evidence supports it.
 
 `where-to-edit` should remain `insufficient_evidence` until a separate localization layer has evaluated reference, call graph, diagnostics, ambiguity, and negative-case evidence.
+
+Context Pack does not change that rule. Other agents or humans may use a Context Pack to decide what to do, but the kernel itself still does not decide.
 
 Impact should remain explicit about the layer used:
 

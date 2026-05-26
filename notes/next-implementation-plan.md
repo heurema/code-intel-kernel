@@ -187,6 +187,23 @@
 - Do not emit edit targets.
 - Keep confident localization deferred until a later readiness gate.
 
+## Future Phase: Context Pack / Deep Repo Understanding
+
+- Keep this phase deferred until explicitly opened.
+- Compose existing read-only layers into token-efficient context for other agents or humans.
+- Include context files, observed symbols, existing capabilities, repo context, SourceContext selectors or bounded slices, diagnostics, verification commands, known facts, unknowns, ambiguities, missing evidence, convergence, disagreements, evidence, warnings, and limitations.
+- Use budget modes:
+  - `fast`: RepoGraph plus Impact plus SymbolGraph-lite summary only.
+  - `deep`: add SourceEvidence, SourceContext selectors/slices, and LSP diagnostics if available.
+  - `very_deep`: run multiple independent evidence channels and report convergence/disagreement.
+- Use output formats:
+  - `compact`: IDs, short reasons, selector hints, no source text by default.
+  - `standard`: bounded snippets and diagnostic excerpts.
+  - `full`: complete evidence details within deterministic limits.
+- Keep `decision_semantics: "not_supported"`.
+- Do not add a CLI command, runtime code, MCP, SQLite, embeddings, call graph, planner behavior, PR generation, or `where-to-edit` integration until a future phase gate explicitly approves it.
+- Evaluate token budget, compactness, evidence coverage, no edit-target-language behavior, ambiguity/refusal behavior, convergence/disagreement correctness, and comparison against raw file exploration before treating this as implementation-ready.
+
 ## Phase 4: EvidenceBundle and ProcessReward
 
 - Generate EvidenceBundle JSON with files, symbols, commands, risks, confidence, and missing evidence.
