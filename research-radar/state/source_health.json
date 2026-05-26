@@ -1,40 +1,56 @@
 {
-  "date": "2026-05-25",
+  "date": "2026-05-26",
   "sources": [
     {
       "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
       "status": "ok",
-      "checked_via": "gh api",
       "canonical_url": "https://github.com/tree-sitter/tree-sitter",
-      "last_observed_update": "2026-05-25T15:15:24Z"
+      "observed_at": "2026-05-26T04:16:42Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
     },
     {
       "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
       "status": "ok",
-      "checked_via": "gh api",
       "canonical_url": "https://github.com/rust-lang/rust-analyzer",
-      "last_observed_update": "2026-05-25T14:04:59Z"
+      "observed_at": "2026-05-26T05:15:49Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "github_rest_api"
     },
     {
       "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
       "status": "ok",
-      "checked_via": "gh api",
       "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
-      "last_observed_update": "2026-05-25T13:52:15Z"
+      "observed_at": "2026-05-26T03:04:49Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
     },
     {
-      "id": "rig-spade",
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
       "status": "ok",
-      "checked_via": "gh api",
-      "canonical_url": "https://github.com/GreenFuze/spade",
-      "last_observed_update": "2026-05-22T10:38:56Z"
+      "canonical_url": "https://github.com/search",
+      "observed_at": "2026-05-26",
+      "checked_via": "github_search_api"
     },
     {
-      "id": "swe-bench",
-      "status": "error",
-      "checked_via": "curl",
-      "canonical_url": "https://www.swebench.com/",
-      "error": "HTTP request timed out after 20 seconds."
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-26",
+      "checked_via": "arxiv_atom_api"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-26",
+      "checked_via": "arxiv_atom_api"
     }
   ]
 }

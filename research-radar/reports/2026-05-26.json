@@ -1,0 +1,388 @@
+{
+  "contract_version": "0.1",
+  "date": "2026-05-26",
+  "sources_checked": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "errors": []
+    }
+  ],
+  "source_health": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-05-26T04:16:42Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-05-26T05:15:49Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "observed_at": "2026-05-26T03:04:49Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "canonical_url": "https://github.com/search",
+      "observed_at": "2026-05-26",
+      "checked_via": "github_search_api"
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-26",
+      "checked_via": "arxiv_atom_api"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-26",
+      "checked_via": "arxiv_atom_api"
+    }
+  ],
+  "new_items": [
+    {
+      "title": "DeusData/codebase-memory-mcp repository activity",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "score": 84,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "high",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify graph/source/MCP boundaries without importing architecture.",
+      "reason_not_now": "Score 84 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "DeusData/codebase-memory-mcp commit 6226972",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp/commit/6226972f13f867e332dd8721df763946926400de",
+      "score": 80,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "high",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify graph/source/MCP boundaries without importing architecture.",
+      "reason_not_now": "Score 80 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer nightly",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/releases/tag/nightly",
+      "score": 80,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "add eval case",
+      "confidence": "high",
+      "estimated_cost": "medium",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 80 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "DeusData/codebase-memory-mcp commit c29e6d5",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp/commit/c29e6d51f4fad5596e59741800e1e6f412656ffe",
+      "score": 78,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "medium",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify graph/source/MCP boundaries without importing architecture.",
+      "reason_not_now": "Score 78 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "DeusData/codebase-memory-mcp commit d12e889",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp/commit/d12e88919dabe75784d2b13f89545386c67df54e",
+      "score": 78,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "medium",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify graph/source/MCP boundaries without importing architecture.",
+      "reason_not_now": "Score 78 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer repository activity",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "score": 76,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "add eval case",
+      "confidence": "medium",
+      "estimated_cost": "medium",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 76 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "Building Digital Societies as Ecosystems: How Recognition and Repeat Relationships Sustain Cross-Community Work in Open Source",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.25055v1",
+      "score": 74,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "CODESKILL: Learning Self-Evolving Skills for Coding Agents",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.25430v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "FrontierOR: Benchmarking LLMs' Capacity for Efficient Algorithm Design in Large-Scale Optimization",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.25246v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "rust-lang/rust-analyzer commit 8eaf7af",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/commit/8eaf7af5ac26de7b4dca217b5656e7163dbd401c",
+      "score": 72,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "tree-sitter/tree-sitter repository activity",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "score": 72,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before SymbolGraph hardening.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer commit 462d95c",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/commit/462d95ca60fa7360b44258be94105bc20e203684",
+      "score": 70,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer commit d2cf9ce",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/commit/d2cf9ceecda33bda5bd30b4d2503bd7fa301053e",
+      "score": 70,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "tree-sitter/tree-sitter commit 30c00bc",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/30c00bc4fe1708a28c8f43498e4fc3b041047df3",
+      "score": 66,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "archive",
+      "confidence": "low",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before SymbolGraph hardening.",
+      "reason_not_now": "Score 66 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "tree-sitter/tree-sitter commit a5c0d24",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/a5c0d24749cce1181b51aab3f05ca6b732e7733d",
+      "score": 66,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "archive",
+      "confidence": "low",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before SymbolGraph hardening.",
+      "reason_not_now": "Score 66 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "tree-sitter/tree-sitter commit b1fa972",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/b1fa9725cf7bad668ac98b9fd3ec303f1e9076ec",
+      "score": 66,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "archive",
+      "confidence": "low",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before SymbolGraph hardening.",
+      "reason_not_now": "Score 66 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    }
+  ],
+  "top_items": [
+    {
+      "title": "DeusData/codebase-memory-mcp repository activity",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "score": 84,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "high",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify graph/source/MCP boundaries without importing architecture.",
+      "reason_not_now": "Score 84 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "DeusData/codebase-memory-mcp commit 6226972",
+      "source": "Codebase-Memory GitHub repository",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp/commit/6226972f13f867e332dd8721df763946926400de",
+      "score": 80,
+      "affected_module": "SourceEvidence | SourceContext | SymbolGraph | future MCP | future SQLite",
+      "suggested_action": "create design note",
+      "confidence": "high",
+      "estimated_cost": "low for design note, high for implementation",
+      "expected_upside": "Clarify graph/source/MCP boundaries without importing architecture.",
+      "reason_not_now": "Score 80 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer nightly",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/releases/tag/nightly",
+      "score": 80,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "add eval case",
+      "confidence": "high",
+      "estimated_cost": "medium",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 80 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    }
+  ],
+  "archive_items": [
+    {
+      "title": "tree-sitter/tree-sitter commit 30c00bc",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/30c00bc4fe1708a28c8f43498e4fc3b041047df3",
+      "score": 66,
+      "reason": "Score 66 is below the 85 prototype threshold."
+    },
+    {
+      "title": "tree-sitter/tree-sitter commit a5c0d24",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/a5c0d24749cce1181b51aab3f05ca6b732e7733d",
+      "score": 66,
+      "reason": "Score 66 is below the 85 prototype threshold."
+    },
+    {
+      "title": "tree-sitter/tree-sitter commit b1fa972",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/b1fa9725cf7bad668ac98b9fd3ec303f1e9076ec",
+      "score": 66,
+      "reason": "Score 66 is below the 85 prototype threshold."
+    }
+  ],
+  "experiment_candidate": null,
+  "errors": [],
+  "next_actions": [
+    "Review top items manually; do not implement from report output.",
+    "No experiment candidate crossed the prototype threshold."
+  ],
+  "guardrails": {
+    "runtime_code_modified": false,
+    "automation_created_code_changes": false,
+    "external_code_imported": false,
+    "implementation_triggered": false,
+    "prototype_threshold": 85,
+    "experiment_candidate_is_code": false
+  },
+  "automation_notes": [
+    "Collector uses configured public sources only.",
+    "Reports are normalized summaries, not raw API payloads.",
+    "No item may trigger implementation automatically."
+  ]
+}

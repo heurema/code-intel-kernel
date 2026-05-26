@@ -1,17 +1,10 @@
 {
-  "date": "2026-05-25",
-  "kind": "manual_dry_run",
-  "sources_checked": [
-    "tree-sitter",
-    "rust-analyzer",
-    "codebase-memory",
-    "rig-spade",
-    "swe-bench"
-  ],
-  "report_md": "research-radar/reports/2026-05-25.md",
-  "report_json": "research-radar/reports/2026-05-25.json",
+  "date": "2026-05-26",
+  "kind": "research_radar_automation",
+  "report_md": "research-radar/reports/2026-05-26.md",
+  "report_json": "research-radar/reports/2026-05-26.json",
   "runtime_code_modified": false,
-  "automation_created": false,
+  "automation_created": true,
   "implementation_triggered": false,
   "experiment_candidate": null
 }
