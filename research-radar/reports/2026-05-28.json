@@ -1,0 +1,210 @@
+{
+  "contract_version": "0.1",
+  "date": "2026-05-28",
+  "sources_checked": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "errors": []
+    }
+  ],
+  "source_health": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-05-28T02:57:37Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-05-28T02:32:57Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "observed_at": "2026-05-28T02:59:18Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "canonical_url": "https://github.com/search",
+      "observed_at": "2026-05-28",
+      "checked_via": "github_search_api"
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-28",
+      "checked_via": "arxiv_atom_api"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-28",
+      "checked_via": "arxiv_atom_api"
+    }
+  ],
+  "new_items": [
+    {
+      "title": "Classification Theory and the Construction of PAC Fields",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.28299v1",
+      "score": 74,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Benchmarks are Not Enough: RAMP for Runtime Assessing of Agentic Models in Production Systems",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.27492v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Poison with Style: A Practical Poisoning Attack on Code Large Language Models",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.27631v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "SNARE: Adaptive Scenario Synthesis for Eliciting Overeager Behavior in Coding Agents",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.28122v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    }
+  ],
+  "top_items": [
+    {
+      "title": "Classification Theory and the Construction of PAC Fields",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.28299v1",
+      "score": 74,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Benchmarks are Not Enough: RAMP for Runtime Assessing of Agentic Models in Production Systems",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.27492v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Poison with Style: A Practical Poisoning Attack on Code Large Language Models",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.27631v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    }
+  ],
+  "archive_items": [],
+  "experiment_candidate": null,
+  "errors": [],
+  "next_actions": [
+    "Review top items manually; do not implement from report output.",
+    "No experiment candidate crossed the prototype threshold."
+  ],
+  "guardrails": {
+    "runtime_code_modified": false,
+    "automation_created_code_changes": false,
+    "external_code_imported": false,
+    "implementation_triggered": false,
+    "prototype_threshold": 85,
+    "experiment_candidate_is_code": false
+  },
+  "automation_notes": [
+    "Collector uses configured public sources only.",
+    "Reports are normalized summaries, not raw API payloads.",
+    "No item may trigger implementation automatically."
+  ]
+}

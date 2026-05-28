@@ -1,0 +1,283 @@
+{
+  "contract_version": "0.1",
+  "date": "2026-05-27",
+  "sources_checked": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "errors": []
+    }
+  ],
+  "source_health": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-05-27T04:19:34Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-05-27T04:52:02Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "observed_at": "2026-05-27T03:13:16Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "canonical_url": "https://github.com/search",
+      "observed_at": "2026-05-27",
+      "checked_via": "github_search_api"
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-27",
+      "checked_via": "arxiv_atom_api"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-27",
+      "checked_via": "arxiv_atom_api"
+    }
+  ],
+  "new_items": [
+    {
+      "title": "Helicase: Uncertainty-Guided Supply Chain Knowledge Graph Construction with Autonomous Multi-Agent LLMs",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.26835v1",
+      "score": 74,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "EviACT: An Evidence-to-Action Framework for Agentic Program Repair",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.27238v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "RepoMirage: Probing Repository Context Reasoning in Code Agents with Perturbations",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.26177v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "SEC-bench Pro: Can Language Models Solve Long-Horizon Software Security Tasks?",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.26548v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Verus-SpecGym: An Agentic Environment for Evaluating Specification Autoformalization",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.26457v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "rust-lang/rust-analyzer commit b48cc10",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/commit/b48cc1083d4fd7264d968ba613553400a30a90a8",
+      "score": 70,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer commit c3af07a",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/commit/c3af07ad84d68adc5e652e86f0c20009caa29014",
+      "score": 70,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "rust-lang/rust-analyzer commit f01fff8",
+      "source": "rust-analyzer GitHub repository",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer/commit/f01fff8a0d437713ba48aacf1ee489dce659cb58",
+      "score": 70,
+      "affected_module": "LSP Bridge",
+      "suggested_action": "read",
+      "confidence": "medium",
+      "estimated_cost": "low",
+      "expected_upside": "Reduce LSP bridge brittleness before references or definitions.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Apache-2.0 reported by GitHub API."
+    },
+    {
+      "title": "tree-sitter/tree-sitter commit e39ef3e",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/e39ef3e700f01bab839ca8a8468dbecac86c5497",
+      "score": 66,
+      "affected_module": "SymbolGraph",
+      "suggested_action": "archive",
+      "confidence": "low",
+      "estimated_cost": "low",
+      "expected_upside": "Avoid stale parser assumptions before SymbolGraph hardening.",
+      "reason_not_now": "Score 66 is below the 85 prototype threshold.",
+      "license_or_terms_note": "MIT reported by GitHub API."
+    }
+  ],
+  "top_items": [
+    {
+      "title": "Helicase: Uncertainty-Guided Supply Chain Knowledge Graph Construction with Autonomous Multi-Agent LLMs",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.26835v1",
+      "score": 74,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "EviACT: An Evidence-to-Action Framework for Agentic Program Repair",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.27238v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "RepoMirage: Probing Repository Context Reasoning in Code Agents with Perturbations",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2605.26177v1",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    }
+  ],
+  "archive_items": [
+    {
+      "title": "tree-sitter/tree-sitter commit e39ef3e",
+      "source": "Tree-sitter GitHub repository",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter/commit/e39ef3e700f01bab839ca8a8468dbecac86c5497",
+      "score": 66,
+      "reason": "Score 66 is below the 85 prototype threshold."
+    }
+  ],
+  "experiment_candidate": null,
+  "errors": [],
+  "next_actions": [
+    "Review top items manually; do not implement from report output.",
+    "No experiment candidate crossed the prototype threshold."
+  ],
+  "guardrails": {
+    "runtime_code_modified": false,
+    "automation_created_code_changes": false,
+    "external_code_imported": false,
+    "implementation_triggered": false,
+    "prototype_threshold": 85,
+    "experiment_candidate_is_code": false
+  },
+  "automation_notes": [
+    "Collector uses configured public sources only.",
+    "Reports are normalized summaries, not raw API payloads.",
+    "No item may trigger implementation automatically."
+  ]
+}

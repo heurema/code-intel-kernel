@@ -1,12 +1,12 @@
 {
-  "date": "2026-05-26",
+  "date": "2026-05-28",
   "sources": [
     {
       "id": "tree-sitter",
       "name": "Tree-sitter GitHub repository",
       "status": "ok",
       "canonical_url": "https://github.com/tree-sitter/tree-sitter",
-      "observed_at": "2026-05-26T04:16:42Z",
+      "observed_at": "2026-05-28T02:57:37Z",
       "license_or_terms_note": "MIT",
       "checked_via": "github_rest_api"
     },
@@ -15,7 +15,7 @@
       "name": "rust-analyzer GitHub repository",
       "status": "ok",
       "canonical_url": "https://github.com/rust-lang/rust-analyzer",
-      "observed_at": "2026-05-26T05:15:49Z",
+      "observed_at": "2026-05-28T02:32:57Z",
       "license_or_terms_note": "Apache-2.0",
       "checked_via": "github_rest_api"
     },
@@ -24,7 +24,7 @@
       "name": "Codebase-Memory GitHub repository",
       "status": "ok",
       "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
-      "observed_at": "2026-05-26T03:04:49Z",
+      "observed_at": "2026-05-28T02:59:18Z",
       "license_or_terms_note": "MIT",
       "checked_via": "github_rest_api"
     },
@@ -33,7 +33,7 @@
       "name": "GitHub research repositories",
       "status": "ok",
       "canonical_url": "https://github.com/search",
-      "observed_at": "2026-05-26",
+      "observed_at": "2026-05-28",
       "checked_via": "github_search_api"
     },
     {
@@ -41,7 +41,7 @@
       "name": "arXiv code agents query",
       "status": "ok",
       "canonical_url": "https://export.arxiv.org/api/query",
-      "observed_at": "2026-05-26",
+      "observed_at": "2026-05-28",
       "checked_via": "arxiv_atom_api"
     },
     {
@@ -49,7 +49,7 @@
       "name": "arXiv code graphs query",
       "status": "ok",
       "canonical_url": "https://export.arxiv.org/api/query",
-      "observed_at": "2026-05-26",
+      "observed_at": "2026-05-28",
       "checked_via": "arxiv_atom_api"
     }
   ]
