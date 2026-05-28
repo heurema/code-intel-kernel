@@ -1,0 +1,226 @@
+{
+  "date": "2026-05-26",
+  "audit_id": "EOD-Audit-0",
+  "head_commit": {
+    "short": "d5b5bed",
+    "full": "d5b5bed64e1e2b2e15a88f1ebe9eb6e1c4c63970",
+    "subject": "Add Research Radar report",
+    "branch": "main",
+    "upstream": "origin/main",
+    "sync_state": "synced_at_audit_start"
+  },
+  "checks": {
+    "cargo_fmt_check": "passed",
+    "cargo_test": {
+      "status": "passed",
+      "smoke_tests": 82,
+      "failed": 0
+    },
+    "cargo_clippy_d_warnings": "passed",
+    "research_radar_validate_reports": "passed",
+    "research_radar_dry_run": {
+      "status": "passed_with_source_errors",
+      "runtime_changes": false,
+      "source_errors": [
+        {
+          "source": "arxiv-code-agents",
+          "message": "The read operation timed out"
+        },
+        {
+          "source": "arxiv-code-graphs",
+          "message": "HTTP 429 for https://export.arxiv.org/api/query"
+        }
+      ]
+    },
+    "research_radar_py_compile": "passed",
+    "git_diff_check": "passed",
+    "secrets_search": "no_findings",
+    "raw_payload_search": "only_guardrail_text",
+    "forbidden_implementation_language_search": "only_guardrail_text"
+  },
+  "contract_versions": {
+    "inspect": "0.2",
+    "impact": "0.2",
+    "eval": "0.4",
+    "symbols": "0.1",
+    "source_evidence": "0.3",
+    "source_context": "0.1",
+    "lsp_diagnostics": "0.1",
+    "context_pack": "draft-0.1",
+    "research_radar_report": "0.1",
+    "where_to_edit": "placeholder_no_contract_version"
+  },
+  "eval_summary": {
+    "total_cases": 35,
+    "passed_cases": 35,
+    "failed_cases": 0,
+    "inspect_cases": 11,
+    "impact_cases": 6,
+    "symbol_cases": 3,
+    "source_evidence_cases": 9,
+    "source_context_cases": 6,
+    "metrics": {
+      "deterministic_output_pass_rate": 1.0,
+      "evidence_coverage_pass_rate": 1.0,
+      "expected_fact_recall": 1.0,
+      "false_broad_count": 0,
+      "false_narrow_count": 0,
+      "missing_expected_warning_count": 0,
+      "unexpected_warning_count": 0
+    }
+  },
+  "cli_snapshots": {
+    "inspect": {
+      "package_managers": 1,
+      "components": 3,
+      "commands": 5,
+      "warnings": 1
+    },
+    "impact": {
+      "status": "partial",
+      "confidence": "medium",
+      "impacted_components": 3,
+      "recommendations": 0
+    },
+    "symbols": {
+      "source_files": 28,
+      "symbols": 473,
+      "warnings": 2
+    },
+    "source_evidence": {
+      "status": "partial",
+      "confidence": "low",
+      "candidate_files": 8,
+      "candidate_symbols": 12,
+      "source_context_selectors": 12,
+      "source_evidence_records": 506,
+      "warnings": 5,
+      "missing_evidence": 8
+    },
+    "source_context": {
+      "status": "ok",
+      "slices": 1,
+      "warnings": 1,
+      "limitations": 4
+    },
+    "lsp_diagnostics": {
+      "status": "unavailable",
+      "diagnostics": 0,
+      "warnings": 3,
+      "missing_evidence": 3
+    },
+    "where_to_edit": {
+      "ok": false,
+      "status": "insufficient_evidence",
+      "confidence": 0,
+      "files": 0,
+      "symbols": 0
+    }
+  },
+  "timings": {
+    "platform": "macOS /usr/bin/time -l",
+    "smoke_single_thread": {
+      "real_seconds": 2.50,
+      "user_seconds": 1.86,
+      "sys_seconds": 0.18,
+      "max_rss_bytes": 31326208
+    },
+    "eval_fixtures": {
+      "real_seconds": 0.71,
+      "user_seconds": 0.26,
+      "sys_seconds": 0.04,
+      "max_rss_bytes": 12173312
+    },
+    "symbols": {
+      "real_seconds": 0.59,
+      "user_seconds": 0.14,
+      "sys_seconds": 0.03,
+      "max_rss_bytes": 10092544
+    },
+    "source_evidence": {
+      "real_seconds": 0.57,
+      "user_seconds": 0.15,
+      "sys_seconds": 0.04,
+      "max_rss_bytes": 11485184
+    }
+  },
+  "determinism": {
+    "eval_fixtures_run_1_vs_5": "stable_no_diff",
+    "symbols_run_1_vs_5": "stable_no_diff"
+  },
+  "largest_files": [
+    {
+      "path": "src/core/repo_graph.rs",
+      "lines": 2921
+    },
+    {
+      "path": "tests/smoke.rs",
+      "lines": 1876
+    },
+    {
+      "path": "src/core/evaluation.rs",
+      "lines": 1657
+    },
+    {
+      "path": "src/core/source_evidence.rs",
+      "lines": 1080
+    },
+    {
+      "path": "src/core/lsp_bridge.rs",
+      "lines": 908
+    },
+    {
+      "path": "src/core/source_context.rs",
+      "lines": 741
+    },
+    {
+      "path": "research-radar/bin/run_daily.py",
+      "lines": 724
+    },
+    {
+      "path": "src/core/symbol_graph.rs",
+      "lines": 532
+    }
+  ],
+  "risks": [
+    {
+      "id": "docs-runtime-drift-agent-tools",
+      "severity": "moderate",
+      "summary": "docs/05-agent-tools.md describes where_to_edit and symbol_context capabilities that runtime does not support."
+    },
+    {
+      "id": "placeholder-public-exports",
+      "severity": "moderate",
+      "summary": "Public exports include sqlite, memory, process_reward, and evidence placeholders that may look more mature than they are."
+    },
+    {
+      "id": "large-modules",
+      "severity": "moderate",
+      "summary": "repo_graph.rs and tests/smoke.rs are large enough to slow future changes and reviews."
+    },
+    {
+      "id": "lsp-eval-gap",
+      "severity": "moderate",
+      "summary": "LSP diagnostics has runtime smoke tests but no fixture eval count."
+    },
+    {
+      "id": "public-security-metadata-gap",
+      "severity": "moderate",
+      "summary": "LICENSE, SECURITY.md, CI workflow, and Cargo.toml license metadata are missing."
+    },
+    {
+      "id": "research-radar-source-reliability",
+      "severity": "narrow",
+      "summary": "Dry-run succeeded but arXiv sources returned timeout/429."
+    }
+  ],
+  "recommendations": [
+    "Run a hygiene pass on stale bootstrap docs before adding runtime features.",
+    "Add or explicitly defer LICENSE, SECURITY.md, Cargo.toml license metadata, and CI.",
+    "Split tests/smoke.rs by layer or scenario.",
+    "Split repo_graph.rs by extractor responsibility after tests remain stable.",
+    "Add LSP diagnostics eval/adversarial cases before starting references/definitions.",
+    "Keep Research Radar report/state-only and monitor arXiv reliability before source expansion."
+  ],
+  "next_phase_recommendation": "hygiene_first_not_phase_3b_b"
+}
