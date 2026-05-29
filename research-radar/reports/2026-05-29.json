@@ -1,0 +1,236 @@
+{
+  "contract_version": "0.1",
+  "date": "2026-05-29",
+  "sources_checked": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "errors": []
+    }
+  ],
+  "source_health": [
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-05-29T05:51:40Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-05-29T03:13:23Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "observed_at": "2026-05-29T05:08:12Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "github_rest_api"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "canonical_url": "https://github.com/search",
+      "observed_at": "2026-05-29",
+      "checked_via": "github_search_api"
+    },
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "canonical_url": "https://rss.arxiv.org/",
+      "observed_at": "2026-05-29T04:00:00Z",
+      "checked_via": "arxiv_rss_keyword_filter"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "canonical_url": "https://export.arxiv.org/api/query",
+      "observed_at": "2026-05-29",
+      "checked_via": "arxiv_atom_api"
+    }
+  ],
+  "new_items": [
+    {
+      "title": "Converted, Not Equivalent: Benchmarking Codebase Conversion via Observational Equivalence",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2605.29054",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Cross-Project Flakiness: A Case Study of the OpenStack Ecosystem",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2602.09311",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "From Historical Patches to Repair Plans: Outcome-Conditioned Reasoning for Repository-Level Program Repair",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2601.23257",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "How Coding Agents Fail Their Users: A Large-Scale Analysis of Developer-Agent Misalignment in 20,574 Real-World Sessions",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2605.29442",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "LogDx-CI: Benchmarking Log Reduction Tools for LLM Root-Cause Diagnosis",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2605.28876",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "MigrationBench: Repository-Level Code Migration Benchmark from Java 8",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2505.09569",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    }
+  ],
+  "top_items": [
+    {
+      "title": "Converted, Not Equivalent: Benchmarking Codebase Conversion via Observational Equivalence",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2605.29054",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "Cross-Project Flakiness: A Case Study of the OpenStack Ecosystem",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2602.09311",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    },
+    {
+      "title": "From Historical Patches to Repair Plans: Outcome-Conditioned Reasoning for Repository-Level Program Repair",
+      "source": "arXiv code agents query",
+      "canonical_url": "https://arxiv.org/abs/2601.23257",
+      "score": 72,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "Paper terms need review before reuse."
+    }
+  ],
+  "archive_items": [],
+  "experiment_candidate": null,
+  "errors": [],
+  "next_actions": [
+    "Review top items manually; do not implement from report output.",
+    "No experiment candidate crossed the prototype threshold."
+  ],
+  "guardrails": {
+    "runtime_code_modified": false,
+    "automation_created_code_changes": false,
+    "external_code_imported": false,
+    "implementation_triggered": false,
+    "prototype_threshold": 85,
+    "experiment_candidate_is_code": false
+  },
+  "automation_notes": [
+    "Collector uses configured public sources only.",
+    "Reports are normalized summaries, not raw API payloads.",
+    "No item may trigger implementation automatically."
+  ]
+}

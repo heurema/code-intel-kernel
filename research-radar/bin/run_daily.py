@@ -9,13 +9,18 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import email.utils
 import hashlib
 import json
 import os
 from pathlib import Path
+import re
+import socket
 import subprocess
 import sys
 import textwrap
+import time
+from typing import Any
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -25,10 +30,14 @@ import xml.etree.ElementTree as ET
 CONTRACT_VERSION = "0.1"
 USER_AGENT = "code-intel-kernel-research-radar/0.1"
 TIMEOUT_SECONDS = 20
+ARXIV_TIMEOUT_SECONDS = 75
+ARXIV_MAX_ATTEMPTS = 3
 MAX_TOP_ITEMS = 3
 MAX_ARCHIVE_ITEMS = 10
 MAX_SOURCE_ITEMS = 10
 PROTOTYPE_THRESHOLD = 85
+_GITHUB_TOKEN_CACHE: str | None | bool = False
+_HOST_LAST_REQUEST_AT: dict[str, float] = {}
 
 
 def main() -> int:
@@ -187,12 +196,23 @@ def collect_source(context: RunContext, source: dict) -> tuple[list[dict], dict]
             return collect_github_search(context, source)
         if source_type == "arxiv_query":
             return collect_arxiv_query(context, source)
+        if source_type == "arxiv_rss_keywords":
+            return collect_arxiv_rss_keywords(context, source)
         return [], source_health(source, "error", error=f"Unsupported source type: {source_type}")
     except Exception as error:  # noqa: BLE001 - command-line collector must keep other sources running.
         return [], source_health(source, "error", error=str(error))
 
 
 def collect_github_repo(source: dict) -> tuple[list[dict], dict]:
+    try:
+        return collect_github_repo_api(source)
+    except RuntimeError as error:
+        if not is_github_rate_limit_error(error):
+            raise
+        return collect_github_repo_public_fallback(source)
+
+
+def collect_github_repo_api(source: dict) -> tuple[list[dict], dict]:
     repo = source["repo"]
     repo_meta = fetch_json(f"https://api.github.com/repos/{repo}")
     items: list[dict] = []
@@ -253,6 +273,68 @@ def collect_github_repo(source: dict) -> tuple[list[dict], dict]:
     return bounded(items), health
 
 
+def collect_github_repo_public_fallback(source: dict) -> tuple[list[dict], dict]:
+    repo = source["repo"]
+    repo_url = source["url"]
+    license_id = source.get("license_hint") or "unknown"
+    summary = fetch_github_repo_summary(repo_url)
+    commits = fetch_github_atom_feed(f"https://github.com/{repo}/commits.atom")
+    releases = fetch_github_atom_feed(
+        f"https://github.com/{repo}/releases.atom",
+        allow_not_found=True,
+    )
+    observed_at = commits[0]["published_at"] if commits else None
+    items: list[dict] = [
+        normalize_item(
+            source=source,
+            item_type="github_repo",
+            title=f"{repo} repository activity",
+            canonical_url=repo_url,
+            summary=summary,
+            published_at=observed_at,
+            license_note=f"{license_id} from source manifest; GitHub API rate-limited.",
+            score_delta=0,
+        )
+    ]
+
+    for release in releases[: min(int(source.get("max_releases", 1)), MAX_SOURCE_ITEMS)]:
+        items.append(
+            normalize_item(
+                source=source,
+                item_type="github_release",
+                title=release["title"],
+                canonical_url=release["canonical_url"],
+                summary=release["summary"],
+                published_at=release["published_at"],
+                license_note=f"{license_id} from source manifest; GitHub API rate-limited.",
+                score_delta=4,
+            )
+        )
+
+    for commit in commits[: min(int(source.get("max_commits", 3)), MAX_SOURCE_ITEMS)]:
+        items.append(
+            normalize_item(
+                source=source,
+                item_type="github_commit",
+                title=commit["title"],
+                canonical_url=commit["canonical_url"],
+                summary=commit["summary"],
+                published_at=commit["published_at"],
+                license_note=f"{license_id} from source manifest; GitHub API rate-limited.",
+                score_delta=-6,
+            )
+        )
+
+    return bounded(items), source_health(
+        source,
+        "ok",
+        canonical_url=repo_url,
+        observed_at=observed_at,
+        license_note=license_id,
+        checked_via="github_public_feeds",
+    )
+
+
 def collect_github_search(context: RunContext, source: dict) -> tuple[list[dict], dict]:
     query = context.replace_placeholders(source["query"])
     max_items = min(int(source.get("max_items", 5)), MAX_SOURCE_ITEMS)
@@ -295,7 +377,13 @@ def collect_arxiv_query(context: RunContext, source: dict) -> tuple[list[dict], 
             "sortOrder": "descending",
         }
     )
-    body = fetch_text(f"https://export.arxiv.org/api/query?{params}")
+    body = fetch_text(
+        f"https://export.arxiv.org/api/query?{params}",
+        accept="application/atom+xml",
+        timeout=ARXIV_TIMEOUT_SECONDS,
+        max_attempts=ARXIV_MAX_ATTEMPTS,
+        retry_statuses={429, 503},
+    )
     root = ET.fromstring(body)
     ns = {"atom": "http://www.w3.org/2005/Atom"}
     items = []
@@ -328,9 +416,79 @@ def collect_arxiv_query(context: RunContext, source: dict) -> tuple[list[dict], 
     )
 
 
+def collect_arxiv_rss_keywords(context: RunContext, source: dict) -> tuple[list[dict], dict]:
+    submitted_after = parse_date(context.replace_placeholders(source.get("submitted_after", "1970-01-01")))
+    categories = source.get("rss_categories", [])
+    keywords = [keyword.lower() for keyword in source.get("keywords", [])]
+    per_feed_items = min(int(source.get("per_feed_items", 25)), 100)
+    filtered: dict[str, dict] = {}
+    last_observed_at = None
+    for category in categories:
+        feed_items = fetch_arxiv_rss_feed(category, limit=per_feed_items)
+        for entry in feed_items:
+            published = entry.get("published_at")
+            published_date = parse_date(published[:10]) if published else dt.date.min
+            if published_date < submitted_after:
+                continue
+            haystack = f"{entry['title']} {entry['summary']}".lower()
+            if keywords and not any(keyword in haystack for keyword in keywords):
+                continue
+            item = normalize_item(
+                source=source,
+                item_type="arxiv_paper",
+                title=entry["title"],
+                canonical_url=entry["canonical_url"],
+                summary=entry["summary"],
+                published_at=published,
+                license_note="Paper terms need review before reuse.",
+                score_delta=2,
+            )
+            existing = filtered.get(item["canonical_url"])
+            if existing is None or item["score"] > existing["score"]:
+                filtered[item["canonical_url"]] = item
+            if last_observed_at is None or (published and published > last_observed_at):
+                last_observed_at = published
+    return bounded(list(filtered.values())), source_health(
+        source,
+        "ok",
+        canonical_url="https://rss.arxiv.org/",
+        observed_at=last_observed_at or context.run_date.isoformat(),
+        checked_via="arxiv_rss_keyword_filter",
+    )
+
+
 def fetch_json_list(url: str) -> list[dict]:
     data = fetch_json(url)
     return data if isinstance(data, list) else []
+
+
+def fetch_arxiv_rss_feed(category: str, *, limit: int) -> list[dict]:
+    body = fetch_text(
+        f"https://rss.arxiv.org/rss/{category}",
+        accept="application/rss+xml",
+        timeout=ARXIV_TIMEOUT_SECONDS,
+        max_attempts=ARXIV_MAX_ATTEMPTS,
+        retry_statuses={429, 503},
+    )
+    root = ET.fromstring(body)
+    channel = root.find("channel")
+    if channel is None:
+        return []
+    items = []
+    for item in channel.findall("item")[:limit]:
+        title = " ".join((item.findtext("title", "") or "").split())
+        canonical_url = (item.findtext("link", "") or "").strip()
+        summary = normalize_rss_description(item.findtext("description", "") or "")
+        pub_date = parse_rss_pub_date(item.findtext("pubDate", "") or "")
+        items.append(
+            {
+                "title": title,
+                "canonical_url": canonical_url,
+                "summary": summary,
+                "published_at": pub_date,
+            }
+        )
+    return items
 
 
 def fetch_json(url: str) -> dict | list:
@@ -338,23 +496,55 @@ def fetch_json(url: str) -> dict | list:
     return json.loads(body)
 
 
-def fetch_text(url: str) -> str:
-    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
-    token = os.environ.get("GITHUB_TOKEN")
-    if token and url.startswith("https://api.github.com/"):
-        headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-            return response.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as error:
-        if url.startswith("https://api.github.com/") and error.code in {401, 403}:
-            fallback = fetch_with_gh_api(url)
-            if fallback is not None:
-                return fallback
-        raise RuntimeError(f"HTTP {error.code} for {redact_url(url)}") from error
-    except urllib.error.URLError as error:
-        raise RuntimeError(f"URL error for {redact_url(url)}: {error.reason}") from error
+def fetch_text(
+    url: str,
+    *,
+    accept: str = "application/json",
+    timeout: int = TIMEOUT_SECONDS,
+    max_attempts: int = 1,
+    retry_statuses: set[int] | None = None,
+) -> str:
+    retry_statuses = retry_statuses or set()
+    token = resolve_github_token() if url.startswith("https://api.github.com/") else None
+    for attempt in range(1, max_attempts + 1):
+        maybe_throttle_request(url)
+        headers = {"User-Agent": USER_AGENT, "Accept": accept}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                mark_request_complete(url)
+                return response.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as error:
+            if url.startswith("https://api.github.com/") and error.code in {401, 403}:
+                fallback = fetch_with_gh_api(url)
+                if fallback is not None:
+                    return fallback
+            if error.code in retry_statuses and attempt < max_attempts:
+                delay = compute_retry_delay(url, attempt, error.headers)
+                time.sleep(delay)
+                continue
+            raise RuntimeError(f"HTTP {error.code} for {redact_url(url)}") from error
+        except urllib.error.URLError as error:
+            if is_timeout_error(error.reason) and attempt < max_attempts:
+                delay = compute_retry_delay(url, attempt, None)
+                time.sleep(delay)
+                continue
+            raise RuntimeError(f"URL error for {redact_url(url)}: {error.reason}") from error
+        except TimeoutError as error:
+            if attempt < max_attempts:
+                delay = compute_retry_delay(url, attempt, None)
+                time.sleep(delay)
+                continue
+            raise RuntimeError("The read operation timed out") from error
+        except socket.timeout as error:
+            if attempt < max_attempts:
+                delay = compute_retry_delay(url, attempt, None)
+                time.sleep(delay)
+                continue
+            raise RuntimeError("The read operation timed out") from error
+    raise RuntimeError(f"Request retries exhausted for {redact_url(url)}")
 
 
 def fetch_with_gh_api(url: str) -> str | None:
@@ -371,6 +561,142 @@ def fetch_with_gh_api(url: str) -> str | None:
         )
     except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
+
+
+def resolve_github_token() -> str | None:
+    global _GITHUB_TOKEN_CACHE
+    if _GITHUB_TOKEN_CACHE is not False:
+        return _GITHUB_TOKEN_CACHE or None
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        _GITHUB_TOKEN_CACHE = token
+        return token
+    try:
+        token = subprocess.check_output(
+            ["gh", "auth", "token"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=TIMEOUT_SECONDS,
+        ).strip()
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        token = ""
+    _GITHUB_TOKEN_CACHE = token or None
+    return _GITHUB_TOKEN_CACHE
+
+
+def maybe_throttle_request(url: str) -> None:
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.netloc != "export.arxiv.org":
+        return
+    now = time.monotonic()
+    last_request_at = _HOST_LAST_REQUEST_AT.get(parsed.netloc)
+    if last_request_at is None:
+        return
+    elapsed = now - last_request_at
+    min_delay = 3.0
+    if elapsed < min_delay:
+        time.sleep(min_delay - elapsed)
+
+
+def mark_request_complete(url: str) -> None:
+    parsed = urllib.parse.urlsplit(url)
+    _HOST_LAST_REQUEST_AT[parsed.netloc] = time.monotonic()
+
+
+def compute_retry_delay(url: str, attempt: int, headers: Any | None) -> float:
+    parsed = urllib.parse.urlsplit(url)
+    retry_after = parse_retry_after(headers)
+    if retry_after is not None:
+        return max(retry_after, 1.0)
+    if parsed.netloc == "export.arxiv.org":
+        return min(15.0 * attempt, 45.0)
+    return float(min(attempt, 3))
+
+
+def parse_retry_after(headers: Any | None) -> float | None:
+    if headers is None:
+        return None
+    value = headers.get("Retry-After")
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def fetch_github_repo_summary(repo_url: str) -> str:
+    body = fetch_text(repo_url, accept="text/html")
+    for pattern in [
+        r'<meta[^>]+property="og:description"[^>]+content="([^"]*)"',
+        r'<meta[^>]+name="description"[^>]+content="([^"]*)"',
+    ]:
+        match = re.search(pattern, body, flags=re.IGNORECASE)
+        if match:
+            return html_unescape(match.group(1)).strip()
+    return ""
+
+
+def fetch_github_atom_feed(url: str, *, allow_not_found: bool = False) -> list[dict]:
+    try:
+        body = fetch_text(url, accept="application/atom+xml")
+    except RuntimeError as error:
+        if allow_not_found and str(error).startswith("HTTP 404 "):
+            return []
+        raise
+    root = ET.fromstring(body)
+    ns = {"atom": "http://www.w3.org/2005/Atom"}
+    items = []
+    for entry in root.findall("atom:entry", ns):
+        title = " ".join(text_of(entry, "atom:title", ns).split())
+        canonical_url = ""
+        summary = " ".join(text_of(entry, "atom:content", ns).split())
+        published_at = text_of(entry, "atom:updated", ns) or text_of(entry, "atom:published", ns)
+        link = entry.find("atom:link", ns)
+        if link is not None:
+            canonical_url = link.attrib.get("href", "")
+        items.append(
+            {
+                "title": title,
+                "canonical_url": canonical_url,
+                "summary": summary,
+                "published_at": published_at,
+            }
+        )
+    return items
+
+
+def is_github_rate_limit_error(error: RuntimeError) -> bool:
+    message = str(error)
+    return message.startswith("HTTP 403 for https://api.github.com/")
+
+
+def is_timeout_error(reason: object) -> bool:
+    if isinstance(reason, TimeoutError | socket.timeout):
+        return True
+    return "timed out" in str(reason).lower()
+
+
+def html_unescape(value: str) -> str:
+    return (
+        value.replace("&amp;", "&")
+        .replace("&quot;", '"')
+        .replace("&#39;", "'")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+    )
+
+
+def normalize_rss_description(value: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", value)
+    text = html_unescape(text)
+    return " ".join(text.split())[:500]
+
+
+def parse_rss_pub_date(value: str) -> str | None:
+    if not value.strip():
+        return None
+    return email.utils.parsedate_to_datetime(value).astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def normalize_item(
