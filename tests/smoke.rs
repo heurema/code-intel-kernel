@@ -1533,6 +1533,9 @@ fn evaluator_loads_fixture_cases() {
     assert!(cases
         .iter()
         .any(|case| case.kind == EvalCaseKind::SourceContext));
+    assert!(cases
+        .iter()
+        .any(|case| case.kind == EvalCaseKind::LspDiagnostics));
 }
 
 #[test]
@@ -1548,12 +1551,14 @@ fn evaluator_report_json_includes_metrics_and_current_cases_pass() {
     assert!(report.symbol_cases > 0);
     assert!(report.source_evidence_cases > 0);
     assert!(report.source_context_cases > 0);
+    assert!(report.lsp_diagnostics_cases > 0);
     assert_eq!(report.metrics.evidence_coverage_pass_rate, 1.0);
     assert_eq!(report.metrics.deterministic_output_pass_rate, 1.0);
     assert!(json.get("metrics").is_some());
     assert!(json.get("symbol_cases").is_some());
     assert!(json.get("source_evidence_cases").is_some());
     assert!(json.get("source_context_cases").is_some());
+    assert!(json.get("lsp_diagnostics_cases").is_some());
 }
 
 #[test]
@@ -1579,6 +1584,9 @@ fn eval_fixtures_cli_output_is_valid_json() {
         .as_u64()
         .is_some_and(|count| count > 0));
     assert!(json["source_context_cases"]
+        .as_u64()
+        .is_some_and(|count| count > 0));
+    assert!(json["lsp_diagnostics_cases"]
         .as_u64()
         .is_some_and(|count| count > 0));
     assert!(json.get("metrics").is_some());
@@ -1667,6 +1675,29 @@ fn source_context_eval_cases_pass() {
 }
 
 #[test]
+fn lsp_diagnostics_eval_cases_pass() {
+    let report =
+        run_fixture_evaluation("tests/eval/cases").expect("eval report should include LSP cases");
+
+    for case_name in [
+        "lsp_diagnostics_unavailable",
+        "lsp_diagnostics_path_outside",
+    ] {
+        let result = report
+            .cases
+            .iter()
+            .find(|case| case.name == case_name)
+            .expect("LSP diagnostics eval case should be present");
+        assert!(result.passed, "{case_name} failed: {:?}", result.failures);
+    }
+
+    let json = serde_json::to_value(&report).expect("eval report should serialize");
+    assert!(json["lsp_diagnostics_cases"]
+        .as_u64()
+        .is_some_and(|count| count >= 2));
+}
+
+#[test]
 fn adversarial_localization_eval_cases_pass() {
     let report = run_fixture_evaluation("tests/eval/cases").expect("eval report should run");
 
@@ -1697,6 +1728,9 @@ fn evaluator_reports_deliberate_false_narrow() {
         selector_file: String::new(),
         selector_symbol_id: String::new(),
         selector_lines: None,
+        lsp_command: String::new(),
+        lsp_timeout_ms: None,
+        lsp_max_diagnostics: None,
         changed_files: Vec::new(),
         expect: EvalExpect {
             components_contains: vec!["missing-component".to_string()],
@@ -1723,6 +1757,9 @@ fn evaluator_reports_deliberate_false_broad() {
         selector_file: String::new(),
         selector_symbol_id: String::new(),
         selector_lines: None,
+        lsp_command: String::new(),
+        lsp_timeout_ms: None,
+        lsp_max_diagnostics: None,
         changed_files: vec!["Cargo.toml".to_string()],
         expect: EvalExpect {
             max_impacted_components: Some(0),

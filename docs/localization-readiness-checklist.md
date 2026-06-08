@@ -93,7 +93,8 @@ This checklist defines what must be true before `where-to-edit` can return confi
 
 - [x] LSP diagnostics layer has a first read-only runtime slice.
   Evidence: `lsp-diagnostics` CLI and `docs/lsp-diagnostics-json-contract.md`.
-- [ ] LSP diagnostics layer has fixture/adversarial eval coverage.
+- [x] LSP diagnostics layer has fixture/adversarial eval coverage for unavailable and path-safety behavior.
+  Evidence: eval cases `lsp_diagnostics_unavailable` and `lsp_diagnostics_path_outside`; smoke test `lsp_diagnostics_eval_cases_pass`.
 - [ ] LSP reference layer is implemented and evaluated.
 - [ ] Definition disambiguation is implemented and evaluated.
 - [ ] Semantic type/hover evidence is evaluated or explicitly deferred.

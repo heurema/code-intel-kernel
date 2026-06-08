@@ -250,7 +250,7 @@ These contracts are drafts. Phase 3A must not change existing runtime contracts:
 
 - `inspect`: `0.2`
 - `impact`: `0.2`
-- `eval`: `0.4`
+- `eval`: `0.5`
 - `symbols`: `0.1`
 - `source_evidence`: `0.3`
 - `source_context`: `0.1`

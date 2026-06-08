@@ -122,4 +122,4 @@ It does not use LSP, SQLite, MCP, embeddings, call graph, references, or import/
 - `symbols`: unchanged, `0.1`
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`
-- `eval`: `0.4` when source-context eval cases are present
+- `eval`: `0.5` with LSP diagnostics eval cases; `0.4` when source-context eval cases were added

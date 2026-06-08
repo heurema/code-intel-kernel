@@ -1,0 +1,31 @@
+{
+  "name": "lsp_diagnostics_unavailable",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "lsp_diagnostics",
+  "selector_file": "src/lib.rs",
+  "lsp_command": "code-intel-missing-rust-analyzer",
+  "expect": {
+    "lsp_status": "unavailable",
+    "warnings_contains_categories": [
+      "lsp_not_localization",
+      "lsp_diagnostics_unavailable",
+      "rust_analyzer_unavailable"
+    ],
+    "missing_evidence_contains": [
+      "lsp_diagnostics_unavailable",
+      "no_lsp_diagnostics",
+      "rust_analyzer_unavailable"
+    ],
+    "output_not_contains": [
+      "edit this",
+      "edit here",
+      "edit_location",
+      "target_edit",
+      "patch target",
+      "apply patch",
+      "root cause",
+      "change this",
+      "correct edit location"
+    ]
+  }
+}

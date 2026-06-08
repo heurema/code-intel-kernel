@@ -1,3 +1,8 @@
+use crate::core::lsp_bridge::{
+    collect_rust_lsp_diagnostics_with_options, lsp_diagnostics_evidence_valid,
+    LspAvailabilityStatus, LspDiagnosticsOptions, LspDiagnosticsReport, LspWarning,
+    LspWarningCategory,
+};
 use crate::core::repo_graph::{
     analyze_impact, inspect_repo, DetectionCategory, DetectionIssue, Evidence, ImpactConfidence,
     ImpactReport, ImpactScope, ImpactStatus, RepoInspection,
@@ -20,7 +25,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-pub const EVAL_CONTRACT_VERSION: &str = "0.4";
+pub const EVAL_CONTRACT_VERSION: &str = "0.5";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -30,6 +35,7 @@ pub enum EvalCaseKind {
     Symbols,
     SourceEvidence,
     SourceContext,
+    LspDiagnostics,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,6 +51,12 @@ pub struct EvalCase {
     pub selector_symbol_id: String,
     #[serde(default)]
     pub selector_lines: Option<String>,
+    #[serde(default)]
+    pub lsp_command: String,
+    #[serde(default)]
+    pub lsp_timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub lsp_max_diagnostics: Option<usize>,
     #[serde(default)]
     pub changed_files: Vec<String>,
     #[serde(default)]
@@ -98,6 +110,8 @@ pub struct EvalExpect {
     pub selector_hint_symbols_contains: Vec<ExpectedSymbol>,
     pub max_source_context_selectors: Option<usize>,
     #[serde(default)]
+    pub lsp_status: Option<String>,
+    #[serde(default)]
     pub slices_contains: Vec<String>,
     #[serde(default)]
     pub slice_symbols_contains: Vec<ExpectedSymbol>,
@@ -131,6 +145,7 @@ pub struct EvaluationReport {
     pub symbol_cases: usize,
     pub source_evidence_cases: usize,
     pub source_context_cases: usize,
+    pub lsp_diagnostics_cases: usize,
     pub metrics: EvalMetrics,
     pub cases: Vec<EvalCaseResult>,
     pub failures: Vec<EvalFailure>,
@@ -221,6 +236,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
     let mut symbol_cases = 0;
     let mut source_evidence_cases = 0;
     let mut source_context_cases = 0;
+    let mut lsp_diagnostics_cases = 0;
 
     for case in cases {
         match case.kind {
@@ -229,6 +245,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
             EvalCaseKind::Symbols => symbol_cases += 1,
             EvalCaseKind::SourceEvidence => source_evidence_cases += 1,
             EvalCaseKind::SourceContext => source_context_cases += 1,
+            EvalCaseKind::LspDiagnostics => lsp_diagnostics_cases += 1,
         }
 
         let result = evaluate_case(&case, &mut counters);
@@ -249,6 +266,7 @@ pub fn evaluate_cases(cases: Vec<EvalCase>) -> Result<EvaluationReport, String> 
         symbol_cases,
         source_evidence_cases,
         source_context_cases,
+        lsp_diagnostics_cases,
         metrics: EvalMetrics {
             evidence_coverage_pass_rate: rate(counters.evidence_passed, counters.evidence_cases),
             expected_fact_recall: rate(counters.expected_checks_passed, counters.expected_checks),
@@ -307,6 +325,19 @@ fn evaluate_case(case: &EvalCase, counters: &mut EvalCounters) -> EvalCaseResult
             check_source_context(case, &first, counters, &mut failures);
             check_source_context_expectations(case, &first, counters, &mut failures);
         }
+        EvalCaseKind::LspDiagnostics => {
+            let files = lsp_diagnostics_files(case);
+            let options = lsp_diagnostics_options(case);
+            let first = collect_rust_lsp_diagnostics_with_options(
+                &case.fixture,
+                files.clone(),
+                options.clone(),
+            );
+            let second = collect_rust_lsp_diagnostics_with_options(&case.fixture, files, options);
+            check_deterministic(case, first == second, counters, &mut failures);
+            check_lsp_diagnostics(case, &first, counters, &mut failures);
+            check_lsp_diagnostics_expectations(case, &first, counters, &mut failures);
+        }
     }
 
     EvalCaseResult {
@@ -315,6 +346,28 @@ fn evaluate_case(case: &EvalCase, counters: &mut EvalCounters) -> EvalCaseResult
         passed: failures.is_empty(),
         failures,
     }
+}
+
+fn lsp_diagnostics_files(case: &EvalCase) -> Vec<String> {
+    if case.selector_file.is_empty() {
+        Vec::new()
+    } else {
+        vec![case.selector_file.clone()]
+    }
+}
+
+fn lsp_diagnostics_options(case: &EvalCase) -> LspDiagnosticsOptions {
+    let mut options = LspDiagnosticsOptions::default();
+    if !case.lsp_command.is_empty() {
+        options.command = Some(case.lsp_command.clone());
+    }
+    if let Some(timeout_ms) = case.lsp_timeout_ms {
+        options.timeout_ms = timeout_ms;
+    }
+    if let Some(max_diagnostics) = case.lsp_max_diagnostics {
+        options.max_diagnostics = max_diagnostics;
+    }
+    options
 }
 
 fn source_context_selectors(case: &EvalCase) -> Vec<SourceContextSelector> {
@@ -402,6 +455,31 @@ fn check_source_context_expectations(
             failures,
         );
     }
+    check_runtime_output_forbidden(case, report, counters, failures);
+}
+
+fn check_lsp_diagnostics_expectations(
+    case: &EvalCase,
+    report: &LspDiagnosticsReport,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    if let Some(expected) = &case.expect.lsp_status {
+        let actual = lsp_status_name(&report.status);
+        check_value(
+            case,
+            "lsp_status",
+            expected.clone(),
+            actual.to_string(),
+            actual == expected,
+            counters,
+            failures,
+        );
+    }
+
+    let warning_categories = lsp_warning_categories(&report.warnings);
+    check_warning_expectations(case, &warning_categories, counters, failures);
+    check_lsp_missing_evidence_expectations(case, report, counters, failures);
     check_runtime_output_forbidden(case, report, counters, failures);
 }
 
@@ -1274,6 +1352,33 @@ fn check_missing_evidence_expectations(
     }
 }
 
+fn check_lsp_missing_evidence_expectations(
+    case: &EvalCase,
+    report: &LspDiagnosticsReport,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    for expected_item in &case.expect.missing_evidence_contains {
+        let passed = report
+            .missing_evidence
+            .iter()
+            .any(|actual_item| actual_item == expected_item);
+        counters.expected_checks += 1;
+        if passed {
+            counters.expected_checks_passed += 1;
+        } else {
+            counters.false_narrow_count += 1;
+            failures.push(failure(
+                case,
+                "missing_evidence_contains",
+                expected_item.clone(),
+                format!("{:?}", report.missing_evidence),
+                "false_narrow",
+            ));
+        }
+    }
+}
+
 fn check_warning_expectations(
     case: &EvalCase,
     actual_categories: &BTreeSet<String>,
@@ -1452,6 +1557,26 @@ fn check_source_context(
     }
 }
 
+fn check_lsp_diagnostics(
+    case: &EvalCase,
+    report: &LspDiagnosticsReport,
+    counters: &mut EvalCounters,
+    failures: &mut Vec<EvalFailure>,
+) {
+    counters.evidence_cases += 1;
+    if lsp_diagnostics_evidence_valid(report) {
+        counters.evidence_passed += 1;
+    } else {
+        failures.push(failure(
+            case,
+            "evidence_coverage",
+            "all LSP diagnostics have valid evidence".to_string(),
+            "missing or invalid evidence reference".to_string(),
+            "evidence_coverage",
+        ));
+    }
+}
+
 fn inspect_evidence_valid(graph: &RepoInspection) -> bool {
     let evidence_ids = evidence_ids(&graph.evidence);
 
@@ -1556,6 +1681,13 @@ fn source_context_warning_categories(warnings: &[SourceContextWarning]) -> BTree
         .collect()
 }
 
+fn lsp_warning_categories(warnings: &[LspWarning]) -> BTreeSet<String> {
+    warnings
+        .iter()
+        .map(|warning| lsp_warning_category_name(&warning.category).to_string())
+        .collect()
+}
+
 fn category_name(category: &DetectionCategory) -> &'static str {
     match category {
         DetectionCategory::AmbiguousDetection => "ambiguous_detection",
@@ -1617,6 +1749,32 @@ fn source_context_category_name(category: &SourceContextWarningCategory) -> &'st
         SourceContextWarningCategory::SymbolNotFound => "symbol_not_found",
         SourceContextWarningCategory::SymlinkIgnored => "symlink_ignored",
         SourceContextWarningCategory::UnsupportedLanguage => "unsupported_language",
+    }
+}
+
+fn lsp_warning_category_name(category: &LspWarningCategory) -> &'static str {
+    match category {
+        LspWarningCategory::RustAnalyzerUnavailable => "rust_analyzer_unavailable",
+        LspWarningCategory::LspDiagnosticsUnavailable => "lsp_diagnostics_unavailable",
+        LspWarningCategory::PathOutsideRepo => "path_outside_repo",
+        LspWarningCategory::IgnoredPath => "ignored_path",
+        LspWarningCategory::SymlinkIgnored => "symlink_ignored",
+        LspWarningCategory::MissingFile => "missing_file",
+        LspWarningCategory::UnsupportedLanguage => "unsupported_language",
+        LspWarningCategory::RequestTimeout => "request_timeout",
+        LspWarningCategory::ResultLimitExceeded => "result_limit_exceeded",
+        LspWarningCategory::ServerError => "server_error",
+        LspWarningCategory::NoFilesRequested => "no_files_requested",
+        LspWarningCategory::LspNotLocalization => "lsp_not_localization",
+    }
+}
+
+fn lsp_status_name(status: &LspAvailabilityStatus) -> &'static str {
+    match status {
+        LspAvailabilityStatus::Ok => "ok",
+        LspAvailabilityStatus::Partial => "partial",
+        LspAvailabilityStatus::Unavailable => "unavailable",
+        LspAvailabilityStatus::Error => "error",
     }
 }
 

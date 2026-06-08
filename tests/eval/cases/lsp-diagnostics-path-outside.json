@@ -1,0 +1,29 @@
+{
+  "name": "lsp_diagnostics_path_outside",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "lsp_diagnostics",
+  "selector_file": "../Cargo.toml",
+  "lsp_command": "code-intel-missing-rust-analyzer",
+  "expect": {
+    "lsp_status": "error",
+    "warnings_contains_categories": [
+      "lsp_not_localization",
+      "path_outside_repo"
+    ],
+    "missing_evidence_contains": [
+      "lsp_diagnostics_unavailable",
+      "no_lsp_diagnostics"
+    ],
+    "output_not_contains": [
+      "edit this",
+      "edit here",
+      "edit_location",
+      "target_edit",
+      "patch target",
+      "apply patch",
+      "root cause",
+      "change this",
+      "correct edit location"
+    ]
+  }
+}
