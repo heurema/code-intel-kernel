@@ -16,6 +16,12 @@
 
 ## Evaluation Plan
 
+## Agent Bench Lab Fit
+
+## Agent Bench Lab Evaluation Handoff
+
+## Agent Bench Lab Blockers
+
 ## Fixtures or Benchmarks Needed
 
 ## Contract Risk

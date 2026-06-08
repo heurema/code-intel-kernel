@@ -79,6 +79,26 @@ Task categories:
 9. avoid rejected hypothesis;
 10. verify diagnostic improvement.
 
+## Agent Bench Lab handoff
+
+`code-intel-kernel` owns the hypothesis, evidence contract, and expected workflow signal.
+Agent Bench Lab owns benchmark task families, scorers, run records, and compare protocol.
+
+Every Research Radar experiment proposal should map the idea to:
+
+```text
+hypothesis
+expected_signal
+candidate Agent Bench Lab suite or task family
+public smoke check vs private holdout need
+run-validity or harness blocker
+baseline setup
+candidate setup
+comparison metric
+```
+
+If Agent Bench Lab cannot evaluate the idea yet, keep that as a benchmark-layer blocker. Do not implement the idea in `code-intel-kernel` merely because it is interesting.
+
 ## Execution-based evaluation
 
 Prefer execution-based checks where possible:
