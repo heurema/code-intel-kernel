@@ -1,10 +1,10 @@
 # Evaluation Harness
 
-Status: Phase 2G fixture evaluation contract.
+Status: Phase 3B-A fixture evaluation contract.
 
-The evaluation harness measures current `inspect`, `impact`, `symbols`, `source-evidence`, and `source-context` behavior across small fixtures.
+The evaluation harness measures current `inspect`, `impact`, `symbols`, `source-evidence`, `source-context`, and `lsp-diagnostics` behavior across small fixtures.
 
-It does not evaluate imports, references, call graphs, edit planning, LSP diagnostics, embeddings, or MCP behavior.
+It does not evaluate imports, references, call graphs, edit planning, embeddings, MCP behavior, or real-server LSP completeness.
 
 ## Command
 
@@ -18,7 +18,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 
 ```json
 {
-  "eval_contract_version": "0.4",
+  "eval_contract_version": "0.5",
   "total_cases": 0,
   "passed_cases": 0,
   "failed_cases": 0,
@@ -27,6 +27,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
   "symbol_cases": 0,
   "source_evidence_cases": 0,
   "source_context_cases": 0,
+  "lsp_diagnostics_cases": 0,
   "metrics": {
     "evidence_coverage_pass_rate": 1.0,
     "expected_fact_recall": 1.0,
@@ -41,7 +42,7 @@ The command loads JSON cases from `tests/eval/cases/` and returns an evaluation 
 }
 ```
 
-The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report counts `symbol_cases` and accepts `symbols` eval cases. Phase 2C bumps it to `0.3` because the report counts `source_evidence_cases` and accepts `source_evidence` eval cases. Phase 2E bumps it to `0.4` because the report counts `source_context_cases` and accepts `source_context` eval cases. This does not change the `inspect`, `impact`, `symbols`, `source_evidence`, or `source_context` contracts.
+The eval report has its own contract version. Phase 2B bumps it to `0.2` because the report counts `symbol_cases` and accepts `symbols` eval cases. Phase 2C bumps it to `0.3` because the report counts `source_evidence_cases` and accepts `source_evidence` eval cases. Phase 2E bumps it to `0.4` because the report counts `source_context_cases` and accepts `source_context` eval cases. Phase 3B-A bumps it to `0.5` because the report counts `lsp_diagnostics_cases` and accepts `lsp_diagnostics` eval cases. This does not change the `inspect`, `impact`, `symbols`, `source_evidence`, `source_context`, or `lsp_diagnostics` contracts.
 
 ## Case Format
 
@@ -73,6 +74,7 @@ Known `kind` values:
 - `symbols`
 - `source_evidence`
 - `source_context`
+- `lsp_diagnostics`
 
 Expectations are semantic checks, not full-output snapshots. A case can assert required facts, forbidden facts, expected warning categories, unexpected warning categories, impact status, confidence, scope, maximum counts, and forbidden runtime-output phrases.
 
@@ -145,7 +147,32 @@ Source-context cases use explicit selectors and can assert slices, symbol slices
 }
 ```
 
-Phase 2G uses `output_not_contains` only against runtime JSON outputs. Documentation can still discuss edit-localization boundaries directly.
+LSP diagnostics cases use explicit file selectors and may force a deterministic unavailable server command:
+
+```json
+{
+  "name": "lsp_diagnostics_unavailable",
+  "fixture": "tests/fixtures/rust-symbols-basic",
+  "kind": "lsp_diagnostics",
+  "selector_file": "src/lib.rs",
+  "lsp_command": "code-intel-missing-rust-analyzer",
+  "expect": {
+    "lsp_status": "unavailable",
+    "warnings_contains_categories": [
+      "lsp_not_localization",
+      "lsp_diagnostics_unavailable",
+      "rust_analyzer_unavailable"
+    ],
+    "missing_evidence_contains": [
+      "lsp_diagnostics_unavailable",
+      "no_lsp_diagnostics"
+    ],
+    "output_not_contains": ["edit_location", "target_edit", "apply patch"]
+  }
+}
+```
+
+Phase 2G and later eval cases use `output_not_contains` only against runtime JSON outputs. Documentation can still discuss edit-localization boundaries directly.
 
 ## Metrics
 
@@ -193,6 +220,7 @@ The initial case set covers:
 - SourceEvidenceBundle broad-query candidate limit and malformed-source refusal.
 - SourceEvidenceBundle selector hints for exact file/symbol matches.
 - SourceContext file slice, symbol slice, missing file, and ignored path refusal.
+- LSP diagnostics unavailable-server and path-containment refusal.
 - Adversarial duplicate-symbol ambiguity.
 - Adversarial reference/call-graph-style query refusal.
 - Unsupported-language source refusal.
@@ -211,6 +239,7 @@ The initial case set covers:
 - It does not execute recommended commands.
 - It does not validate source-level localization.
 - SourceContext eval validates explicit read-only slicing only.
+- LSP diagnostics eval validates unavailable and path-safety behavior only; it does not require or score a real `rust-analyzer` server.
 - Phase 2G adversarial cases validate refusal behavior, not localization correctness.
 - It does not score performance yet.
 - It does not persist historical trend data.

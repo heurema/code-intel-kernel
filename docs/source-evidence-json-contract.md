@@ -189,7 +189,7 @@ Missing evidence is first-class output. It should not be converted into guesses.
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`
 - `symbols`: unchanged, `0.1`
-- `eval`: `0.4`
+- `eval`: `0.5`
 
 ## Candidate Limits
 

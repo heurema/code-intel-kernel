@@ -150,7 +150,7 @@
 - Add broad-query, ignored-path, malformed-source, and missing-reference cases.
 - Prove selector hints stay context handles rather than edit targets.
 - Keep `where-to-edit` as `insufficient_evidence`.
-- Keep `eval_contract_version` at `0.4` unless the report shape changes.
+- `eval_contract_version` stayed at `0.4` through Phase 2G; Phase 3B-A later bumps it to `0.5` for `lsp_diagnostics_cases`.
 - Recommended follow-up: Phase 3A LSP diagnostics/reference bridge design if adversarial failures point to missing references/diagnostics; otherwise Phase 2H SymbolGraph-lite hardening if symbol extraction or duplicate-name handling is weak.
 
 ## Phase 3A: LSP diagnostics/reference bridge design
@@ -166,6 +166,7 @@
 - Implement Rust + `rust-analyzer` diagnostics only.
 - Return structured `unavailable` if rust-analyzer is missing.
 - Keep tests independent from local rust-analyzer availability.
+- Include fixture eval coverage for unavailable-server and path-safety behavior.
 - Keep definitions, references, hover/type info, call hierarchy, formatting, code actions, rename, SQLite, MCP, and `where-to-edit` integration deferred.
 
 ## Phase 3B-B: Read-only definitions/references candidate
@@ -176,7 +177,7 @@
 
 ## Phase 3C: LSP eval/adversarial gate
 
-- Add fixture or mocked-response eval coverage for diagnostics, definitions, references, unavailable server behavior, path safety, and deterministic ordering.
+- Extend fixture or mocked-response eval coverage beyond Phase 3B-A diagnostics unavailable/path-safety cases to definitions, references, unavailable server behavior, path safety, and deterministic ordering.
 - Prove LSP locations remain evidence, not edit targets.
 - Keep `where-to-edit` as `insufficient_evidence`.
 

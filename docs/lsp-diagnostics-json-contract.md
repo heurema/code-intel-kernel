@@ -138,7 +138,7 @@ Diagnostics are evidence, not fixes, root-cause claims, or edit targets.
 - `lsp_diagnostics`: `0.1`
 - `inspect`: unchanged, `0.2`
 - `impact`: unchanged, `0.2`
-- `eval`: unchanged, `0.4`
+- `eval`: `0.5` with `lsp_diagnostics_cases`
 - `symbols`: unchanged, `0.1`
 - `source_evidence`: unchanged, `0.3`
 - `source_context`: unchanged, `0.1`
