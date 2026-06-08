@@ -527,10 +527,7 @@ fn wait_for_response(receiver: &mpsc::Receiver<Value>, id: u64, timeout: Duratio
 
 fn read_lsp_messages<R: Read>(reader: R, sender: mpsc::Sender<Value>) {
     let mut reader = BufReader::new(reader);
-    loop {
-        let Some(length) = read_content_length(&mut reader) else {
-            break;
-        };
+    while let Some(length) = read_content_length(&mut reader) {
         let mut body = vec![0; length];
         if reader.read_exact(&mut body).is_err() {
             break;

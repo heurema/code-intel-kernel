@@ -3,6 +3,7 @@ name = "code-intel-kernel"
 version = "0.0.0"
 edition = "2021"
 description = "Local-first structural code intelligence kernel for agent evidence, repo maps, diagnostics, and typed memory."
+license = "MIT"
 publish = false
 
 [lib]

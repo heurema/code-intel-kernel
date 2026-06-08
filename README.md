@@ -64,4 +64,16 @@ cargo test
 cargo clippy -- -D warnings
 ```
 
+The CI workflow runs the deterministic check bundle:
+
+```bash
+bash scripts/run-deterministic-tests.sh
+```
+
+## Security and License
+
+- Security reporting policy: `SECURITY.md`
+- Internal security notes: `docs/SECURITY.md`
+- License: MIT, see `LICENSE`
+
 The project is intentionally small and read-only first. Prefer explicit evidence and structured warnings over guesses.
