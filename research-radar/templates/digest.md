@@ -30,6 +30,9 @@ Date: `YYYY-MM-DD`
 - Hypothesis:
 - Minimal reversible change:
 - Evaluation plan:
+- Agent Bench Lab fit:
+- Agent Bench Lab evaluation handoff:
+- Agent Bench Lab blockers:
 - Stop condition:
 - Reason not to implement immediately:
 

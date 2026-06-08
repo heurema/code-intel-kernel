@@ -54,6 +54,9 @@
     "hypothesis": "",
     "minimal_reversible_change": "",
     "evaluation_plan": "",
+    "agent_bench_lab_fit": "",
+    "agent_bench_lab_eval_handoff": "",
+    "agent_bench_lab_blockers": "",
     "stop_condition": "",
     "reason_not_to_implement_immediately": ""
   },

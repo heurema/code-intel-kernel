@@ -17,6 +17,9 @@ Required fields:
 - minimal_reversible_change
 - expected_signal
 - evaluation_plan
+- agent_bench_lab_fit
+- agent_bench_lab_eval_handoff
+- agent_bench_lab_blockers
 - fixtures_or_benchmarks_needed
 - contract_risk
 - licensing_attribution_notes
@@ -25,3 +28,4 @@ Required fields:
 - reason_not_to_implement_immediately
 
 The proposal must explain why the experiment should remain separate from mainline feature work until approved.
+The proposal must not assume Agent Bench Lab is complete. If the benchmark layer cannot evaluate the idea yet, record the blocker instead of converting the idea into implementation work.

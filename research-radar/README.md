@@ -11,8 +11,9 @@ core runtime paused
   -> research-radar/
   -> daily digest
   -> human approval
-  -> experiment proposal
+  -> experiment proposal with Agent Bench Lab evaluation handoff
   -> only then Codex prototype
+  -> Agent Bench Lab run/compare when the benchmark layer is ready
 ```
 
 ## Current Scope
@@ -22,7 +23,7 @@ Research Radar v0.1 tracks public sources that may affect `code-intel-kernel`:
 - structural retrieval and repo intelligence;
 - LSP diagnostics, references, and disambiguation;
 - Tree-sitter and parser infrastructure;
-- code intelligence benchmarks;
+- code intelligence benchmarks and Agent Bench Lab evaluation handoff;
 - Codebase-Memory, RIG/SPADE, SWE-bench, and adjacent systems.
 
 The v0.1 scaffold is config and docs only. R2-A adds a bounded collector for reports/state only; it still does not modify runtime code or implement ideas.
@@ -38,6 +39,7 @@ The v0.1 scaffold is config and docs only. R2-A adds a bounded collector for rep
    - `research-radar/reports/YYYY-MM-DD.json`
 6. Do not modify source code.
 7. Do not propose an implementation unless the item scores at least 85 and has an available artifact.
+8. If an experiment candidate is proposed, state whether Agent Bench Lab can evaluate it, which suite or task family would be needed, and what benchmark-layer blockers remain.
 
 For local manual runs, use dry-run first:
 
@@ -61,3 +63,4 @@ It must never modify runtime code, import external code, create prototypes, comm
 ## Output Rule
 
 Daily output is candidate evidence. It cannot trigger code changes automatically.
+Experiment candidates may define an Agent Bench Lab evaluation handoff, but they still require human approval before prototype work or benchmark repo changes.
