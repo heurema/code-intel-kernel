@@ -49,6 +49,43 @@ python3 research-radar/bin/run_daily.py --write
 python3 research-radar/bin/validate_reports.py
 ```
 
+## Shared Intake Shadow
+
+`research-radar/bin/run_daily.py` is still the scheduled daily collector. The
+shared-intake path is a manual shadow path for checking whether this project can
+consume the shared collector/governance repo without changing daily report
+output yet.
+
+The shared-intake consumer contract is repo-owned here:
+
+- `research-radar/shared-intake.lock.json` pins the exact
+  `heurema/shared-intake-governance` commit this project accepts.
+- `research-radar/shared-intake/profile.json` defines this project's intake
+  profile.
+- `research-radar/shared-intake/sources/*.json` defines the source configs this
+  project asks shared-intake to validate or run.
+
+Check the pinned dependency and local configs:
+
+```bash
+python3 research-radar/bin/check_shared_intake_dependency.py \
+  --shared-repo-root ../shared-intake-governance
+```
+
+Run a shadow pass with shared-intake runtime artifacts outside git:
+
+```bash
+python3 research-radar/bin/run_shared_shadow.py \
+  --shared-repo-root ../shared-intake-governance \
+  --runtime-root /tmp/code-intel-shared-intake-shadow
+```
+
+To use a new shared-intake version, update the shared checkout, run
+`python3 scripts/check_repo.py` in `shared-intake-governance`, replace
+`upstream.pinned_commit` in `research-radar/shared-intake.lock.json`, then run
+the dependency check and shadow command above. A moving upstream `main` does not
+silently change this project while the lock is enforced.
+
 ## Codex App Automation
 
 The bounded weekday automation is configured in Codex App, not as a repository workflow. Details are documented in `research-radar/automation.md`.
