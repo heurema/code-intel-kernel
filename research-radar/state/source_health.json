@@ -1,56 +1,56 @@
 {
-  "date": "2026-05-28",
+  "date": "2026-06-08",
   "sources": [
     {
-      "id": "tree-sitter",
-      "name": "Tree-sitter GitHub repository",
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
       "status": "ok",
-      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
-      "observed_at": "2026-05-28T02:57:37Z",
-      "license_or_terms_note": "MIT",
-      "checked_via": "github_rest_api"
+      "canonical_url": null,
+      "observed_at": "2026-06-08T05:20:14Z",
+      "checked_via": "shared_intake_arxiv_query"
     },
     {
-      "id": "rust-analyzer",
-      "name": "rust-analyzer GitHub repository",
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
       "status": "ok",
-      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
-      "observed_at": "2026-05-28T02:32:57Z",
-      "license_or_terms_note": "Apache-2.0",
-      "checked_via": "github_rest_api"
+      "canonical_url": null,
+      "observed_at": "2026-06-08T05:20:16Z",
+      "checked_via": "shared_intake_arxiv_query"
     },
     {
       "id": "codebase-memory",
       "name": "Codebase-Memory GitHub repository",
       "status": "ok",
       "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
-      "observed_at": "2026-05-28T02:59:18Z",
+      "observed_at": "2026-06-08T05:20:17Z",
       "license_or_terms_note": "MIT",
-      "checked_via": "github_rest_api"
+      "checked_via": "shared_intake_github_repo"
     },
     {
       "id": "github-research-repos",
       "name": "GitHub research repositories",
       "status": "ok",
-      "canonical_url": "https://github.com/search",
-      "observed_at": "2026-05-28",
-      "checked_via": "github_search_api"
+      "canonical_url": null,
+      "observed_at": "2026-06-08T05:20:18Z",
+      "checked_via": "shared_intake_github_search"
     },
     {
-      "id": "arxiv-code-agents",
-      "name": "arXiv code agents query",
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
       "status": "ok",
-      "canonical_url": "https://export.arxiv.org/api/query",
-      "observed_at": "2026-05-28",
-      "checked_via": "arxiv_atom_api"
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-06-08T05:20:19Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "shared_intake_github_repo"
     },
     {
-      "id": "arxiv-code-graphs",
-      "name": "arXiv code graphs query",
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
       "status": "ok",
-      "canonical_url": "https://export.arxiv.org/api/query",
-      "observed_at": "2026-05-28",
-      "checked_via": "arxiv_atom_api"
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-06-08T05:20:20Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "shared_intake_github_repo"
     }
   ]
 }

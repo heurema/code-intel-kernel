@@ -1,0 +1,132 @@
+{
+  "contract_version": "0.1",
+  "date": "2026-06-05",
+  "sources_checked": [
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "error",
+      "errors": [
+        "HTTP 429"
+      ]
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "error",
+      "errors": [
+        "The read operation timed out"
+      ]
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    }
+  ],
+  "source_health": [
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "error",
+      "canonical_url": null,
+      "observed_at": "2026-06-05T05:19:30Z",
+      "checked_via": "shared_intake_arxiv_query",
+      "error": "HTTP 429"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "error",
+      "canonical_url": null,
+      "observed_at": "2026-06-05T05:19:50Z",
+      "checked_via": "shared_intake_arxiv_query",
+      "error": "The read operation timed out"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "observed_at": "2026-06-05T05:19:52Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "shared_intake_github_repo"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "canonical_url": null,
+      "observed_at": "2026-06-05T05:19:52Z",
+      "checked_via": "shared_intake_github_search"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-06-05T05:19:54Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "shared_intake_github_repo"
+    },
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-06-05T05:19:55Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "shared_intake_github_repo"
+    }
+  ],
+  "new_items": [],
+  "top_items": [],
+  "archive_items": [],
+  "experiment_candidate": null,
+  "errors": [
+    {
+      "source": "arxiv-code-agents",
+      "message": "HTTP 429"
+    },
+    {
+      "source": "arxiv-code-graphs",
+      "message": "The read operation timed out"
+    }
+  ],
+  "next_actions": [
+    "Review source_health errors before expanding source coverage.",
+    "No experiment candidate crossed the prototype threshold."
+  ],
+  "guardrails": {
+    "runtime_code_modified": false,
+    "automation_created_code_changes": false,
+    "external_code_imported": false,
+    "implementation_triggered": false,
+    "prototype_threshold": 85,
+    "experiment_candidate_is_code": false
+  },
+  "automation_notes": [
+    "Collection runs through shared-intake-governance source-configs.",
+    "Reports are normalized summaries, not raw API payloads.",
+    "No item may trigger implementation automatically."
+  ]
+}
