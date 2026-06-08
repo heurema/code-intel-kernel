@@ -1,0 +1,249 @@
+{
+  "contract_version": "0.1",
+  "date": "2026-06-08",
+  "sources_checked": [
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "errors": []
+    }
+  ],
+  "source_health": [
+    {
+      "id": "arxiv-code-agents",
+      "name": "arXiv code agents query",
+      "status": "ok",
+      "canonical_url": null,
+      "observed_at": "2026-06-08T05:20:14Z",
+      "checked_via": "shared_intake_arxiv_query"
+    },
+    {
+      "id": "arxiv-code-graphs",
+      "name": "arXiv code graphs query",
+      "status": "ok",
+      "canonical_url": null,
+      "observed_at": "2026-06-08T05:20:16Z",
+      "checked_via": "shared_intake_arxiv_query"
+    },
+    {
+      "id": "codebase-memory",
+      "name": "Codebase-Memory GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/DeusData/codebase-memory-mcp",
+      "observed_at": "2026-06-08T05:20:17Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "shared_intake_github_repo"
+    },
+    {
+      "id": "github-research-repos",
+      "name": "GitHub research repositories",
+      "status": "ok",
+      "canonical_url": null,
+      "observed_at": "2026-06-08T05:20:18Z",
+      "checked_via": "shared_intake_github_search"
+    },
+    {
+      "id": "rust-analyzer",
+      "name": "rust-analyzer GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/rust-lang/rust-analyzer",
+      "observed_at": "2026-06-08T05:20:19Z",
+      "license_or_terms_note": "Apache-2.0",
+      "checked_via": "shared_intake_github_repo"
+    },
+    {
+      "id": "tree-sitter",
+      "name": "Tree-sitter GitHub repository",
+      "status": "ok",
+      "canonical_url": "https://github.com/tree-sitter/tree-sitter",
+      "observed_at": "2026-06-08T05:20:20Z",
+      "license_or_terms_note": "MIT",
+      "checked_via": "shared_intake_github_repo"
+    }
+  ],
+  "new_items": [
+    {
+      "title": "On the Road to Personalized Code Intelligence: Portraiting and Assisting Developers Based on Their In-IDE Behaviors",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.29372v1",
+      "score": 74,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "On-the-Fly Input Adaptation for Reliable Code Intelligence",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.19365v1",
+      "score": 72,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "Agentic Very Much! Adoption of Coding Agent in New GitHub Projects",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2606.07448v1",
+      "score": 70,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "Do Coding Agents Deceive Us? Detecting and Preventing Cheating via Capped Evaluation with Randomized Tests",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2606.07379v1",
+      "score": 70,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "MalSkillBench: A Runtime-Verified Benchmark of Malicious Agent Skills",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2606.07131v1",
+      "score": 70,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "SWE-Explore: Benchmarking How Coding Agents Explore Repositories",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2606.07297v1",
+      "score": 70,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "Socratic-SWE: Self-Evolving Coding Agents via Trace-Derived Agent Skills",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2606.07412v1",
+      "score": 70,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    }
+  ],
+  "top_items": [
+    {
+      "title": "On the Road to Personalized Code Intelligence: Portraiting and Assisting Developers Based on Their In-IDE Behaviors",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.29372v1",
+      "score": 74,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 74 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "On-the-Fly Input Adaptation for Reliable Code Intelligence",
+      "source": "arXiv code graphs query",
+      "canonical_url": "http://arxiv.org/abs/2605.19365v1",
+      "score": 72,
+      "affected_module": "SymbolGraph | SourceEvidence | research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 72 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    },
+    {
+      "title": "Agentic Very Much! Adoption of Coding Agent in New GitHub Projects",
+      "source": "arXiv code agents query",
+      "canonical_url": "http://arxiv.org/abs/2606.07448v1",
+      "score": 70,
+      "affected_module": "research only",
+      "suggested_action": "compare",
+      "confidence": "medium",
+      "estimated_cost": "low to medium",
+      "expected_upside": "Surface research direction before implementation planning.",
+      "reason_not_now": "Score 70 is below the 85 prototype threshold.",
+      "license_or_terms_note": "needs_license_review"
+    }
+  ],
+  "archive_items": [],
+  "experiment_candidate": null,
+  "errors": [],
+  "next_actions": [
+    "Review top items manually; do not implement from report output.",
+    "No experiment candidate crossed the prototype threshold."
+  ],
+  "guardrails": {
+    "runtime_code_modified": false,
+    "automation_created_code_changes": false,
+    "external_code_imported": false,
+    "implementation_triggered": false,
+    "prototype_threshold": 85,
+    "experiment_candidate_is_code": false
+  },
+  "automation_notes": [
+    "Collection runs through shared-intake-governance source-configs.",
+    "Reports are normalized summaries, not raw API payloads.",
+    "No item may trigger implementation automatically."
+  ]
+}
