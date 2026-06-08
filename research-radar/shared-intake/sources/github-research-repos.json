@@ -1,0 +1,7 @@
+{
+  "schema_version": "source-config.v1",
+  "source_type": "github_search",
+  "source_id": "github-research-repos",
+  "query": "(\"code intelligence\" OR \"coding agent\" OR \"repository graph\" OR \"Tree-sitter\") pushed:>=${TODAY_MINUS_7D}",
+  "max_results": 5
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "source-config.v1",
+  "source_type": "arxiv_query",
+  "source_id": "arxiv-code-agents",
+  "query": "all:\"coding agent\" OR all:\"code agent\" OR all:\"program repair\" OR all:\"repository-level\"",
+  "max_results": 5
+}

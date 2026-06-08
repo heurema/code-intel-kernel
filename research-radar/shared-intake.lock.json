@@ -1,0 +1,21 @@
+{
+  "schema_version": "shared-intake-consumer.v1",
+  "consumer": "code-intel-kernel/research-radar",
+  "upstream": {
+    "repository": "https://github.com/heurema/shared-intake-governance",
+    "default_relative_path": "../shared-intake-governance",
+    "pinned_commit": "c9a28c55c95267d5e6ff09435cf6d2ff39a2bef9"
+  },
+  "paths": {
+    "profile": "research-radar/shared-intake/profile.json",
+    "sources_glob": "research-radar/shared-intake/sources/*.json",
+    "runtime_root_hint": "$HOME/.local/share/shared-intake-governance"
+  },
+  "update_policy": [
+    "Pull or checkout the desired shared-intake-governance revision.",
+    "Run python3 scripts/check_repo.py in shared-intake-governance.",
+    "Update upstream.pinned_commit in this lock file.",
+    "Run python3 research-radar/bin/check_shared_intake_dependency.py.",
+    "Run python3 research-radar/bin/run_shared_shadow.py with a temporary runtime root before using the revision in automation."
+  ]
+}

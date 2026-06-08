@@ -1,0 +1,7 @@
+{
+  "schema_version": "source-config.v1",
+  "source_type": "github_repo",
+  "source_id": "tree-sitter",
+  "owner": "tree-sitter",
+  "repo": "tree-sitter"
+}

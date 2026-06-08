@@ -21,6 +21,40 @@ python3 research-radar/bin/run_daily.py --write --date YYYY-MM-DD
 python3 research-radar/bin/validate_reports.py
 ```
 
+## Shared Intake Shadow
+
+The scheduled automation still uses `research-radar/bin/run_daily.py`. The
+shared-intake integration is manual shadow/preflight only until a separate
+cutover changes the scheduled command.
+
+Before using a shared-intake checkout for this project, run:
+
+```bash
+python3 research-radar/bin/check_shared_intake_dependency.py \
+  --shared-repo-root ../shared-intake-governance
+```
+
+That check verifies three things:
+
+- the shared checkout is exactly the commit pinned in
+  `research-radar/shared-intake.lock.json`;
+- this project's shared-intake profile validates with the pinned shared CLI;
+- this project's shared-intake source configs validate with the pinned shared CLI.
+
+To adopt a newer shared-intake version:
+
+1. Update the `shared-intake-governance` checkout.
+2. Run `python3 scripts/check_repo.py` inside `shared-intake-governance`.
+3. Replace `upstream.pinned_commit` in
+   `research-radar/shared-intake.lock.json`.
+4. Run `python3 research-radar/bin/check_shared_intake_dependency.py`.
+5. Run `python3 research-radar/bin/run_shared_shadow.py` with a temporary
+   runtime root and inspect the JSON summary.
+6. Commit the consumer lock/config/docs change in this repository.
+
+Do not point automation at a new shared-intake commit until that bump is
+reviewed in this repository.
+
 ## Sources
 
 Automation reads:
