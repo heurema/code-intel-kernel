@@ -2,8 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use toml::Value as TomlValue;
 
+use super::helpers::{normalize_path, stable_id};
 use super::types::*;
-use super::{manifest_warning_category, normalize_path, read_toml, stable_id, RepoGraphBuilder};
+use super::{manifest_warning_category, read_toml, RepoGraphBuilder};
 
 struct CargoWorkspaceMember {
     relative_manifest: PathBuf,

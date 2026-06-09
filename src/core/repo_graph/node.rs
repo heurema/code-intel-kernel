@@ -2,8 +2,9 @@ use serde_json::Value as JsonValue;
 use std::fs;
 use std::path::Path;
 
+use super::helpers::normalize_path;
 use super::types::*;
-use super::{manifest_warning_category, normalize_path, RepoGraphBuilder};
+use super::{manifest_warning_category, RepoGraphBuilder};
 
 pub(super) fn detect_node(root: &Path, builder: &mut RepoGraphBuilder) {
     let package_json = root.join("package.json");

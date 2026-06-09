@@ -1,7 +1,7 @@
 use std::path::Path;
 
+use super::helpers::{normalize_path, stable_id, stable_relationship_id};
 use super::types::*;
-use super::{normalize_path, stable_id, stable_relationship_id};
 
 pub(super) struct RepoGraphBuilder {
     repo_root: String,

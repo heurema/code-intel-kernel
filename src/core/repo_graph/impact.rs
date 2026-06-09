@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use super::sanitize_id;
+use super::helpers::sanitize_id;
 use super::types::*;
 
 pub fn analyze_impact<I, S>(repo_graph: &RepoInspection, changed_files: I) -> ImpactReport

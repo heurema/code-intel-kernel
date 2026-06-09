@@ -5,6 +5,7 @@ use toml::Value as TomlValue;
 mod builder;
 mod generic;
 mod go;
+mod helpers;
 mod impact;
 mod node;
 mod python;
@@ -12,6 +13,7 @@ mod rust;
 mod types;
 
 use builder::RepoGraphBuilder;
+use helpers::{display_path, normalize_path};
 
 pub use impact::analyze_impact;
 pub use types::*;
@@ -65,36 +67,6 @@ fn detect_ignored_paths(root: &Path, builder: &mut RepoGraphBuilder) {
     }
 }
 
-fn stable_id(prefix: &str, value: &str) -> String {
-    format!("{prefix}-{}", sanitize_id(value))
-}
-
-fn stable_relationship_id(kind: &RelationshipKind, src_id: &str, dst_id: &str) -> String {
-    format!(
-        "relationship-{}-{}-{}",
-        sanitize_id(&format!("{kind:?}")),
-        sanitize_id(src_id),
-        sanitize_id(dst_id)
-    )
-}
-
-fn sanitize_id(value: &str) -> String {
-    value
-        .chars()
-        .map(|character| {
-            if character.is_ascii_alphanumeric() {
-                character.to_ascii_lowercase()
-            } else {
-                '-'
-            }
-        })
-        .collect::<String>()
-        .split('-')
-        .filter(|part| !part.is_empty())
-        .collect::<Vec<_>>()
-        .join("-")
-}
-
 fn manifest_warning_category(message: &str) -> DetectionCategory {
     if message.starts_with("Failed to read") {
         DetectionCategory::UnreadableManifest
@@ -108,12 +80,4 @@ fn read_toml(path: &Path) -> Result<TomlValue, String> {
         .map_err(|error| format!("Failed to read {}: {error}", normalize_path(path)))?
         .parse::<TomlValue>()
         .map_err(|error| format!("Failed to parse {}: {error}", normalize_path(path)))
-}
-
-fn normalize_path(path: &Path) -> String {
-    path.to_string_lossy().replace('\\', "/")
-}
-
-fn display_path(path: &Path) -> String {
-    normalize_path(path)
 }
