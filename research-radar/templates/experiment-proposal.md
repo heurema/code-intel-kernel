@@ -20,6 +20,14 @@
 
 ## Agent Bench Lab Evaluation Handoff
 
+- Candidate suite or task family:
+- Public smoke check:
+- Private holdout need:
+- Run-validity or harness blocker:
+- Baseline setup:
+- Candidate setup:
+- Comparison metric:
+
 ## Agent Bench Lab Blockers
 
 ## Fixtures or Benchmarks Needed

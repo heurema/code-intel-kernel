@@ -27,5 +27,15 @@ Required fields:
 - stop_condition
 - reason_not_to_implement_immediately
 
+Inside `agent_bench_lab_eval_handoff`, include:
+
+- candidate_suite_or_task_family
+- public_smoke_check
+- private_holdout_need
+- run_validity_or_harness_blocker
+- baseline_setup
+- candidate_setup
+- comparison_metric
+
 The proposal must explain why the experiment should remain separate from mainline feature work until approved.
 The proposal must not assume Agent Bench Lab is complete. If the benchmark layer cannot evaluate the idea yet, record the blocker instead of converting the idea into implementation work.
