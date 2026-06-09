@@ -2,8 +2,9 @@ use std::fs;
 use std::path::Path;
 use toml::Value as TomlValue;
 
+use super::manifest::{manifest_warning_category, read_toml};
 use super::types::*;
-use super::{manifest_warning_category, read_toml, RepoGraphBuilder};
+use super::RepoGraphBuilder;
 
 pub(super) fn detect_python(root: &Path, builder: &mut RepoGraphBuilder) {
     let mut python_project_detected = false;

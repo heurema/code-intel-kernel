@@ -3,8 +3,9 @@ use std::fs;
 use std::path::Path;
 
 use super::helpers::normalize_path;
+use super::manifest::manifest_warning_category;
 use super::types::*;
-use super::{manifest_warning_category, RepoGraphBuilder};
+use super::RepoGraphBuilder;
 
 pub(super) fn detect_node(root: &Path, builder: &mut RepoGraphBuilder) {
     let package_json = root.join("package.json");

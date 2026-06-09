@@ -1,19 +1,19 @@
 use std::fs;
 use std::path::Path;
-use toml::Value as TomlValue;
 
 mod builder;
 mod generic;
 mod go;
 mod helpers;
 mod impact;
+mod manifest;
 mod node;
 mod python;
 mod rust;
 mod types;
 
 use builder::RepoGraphBuilder;
-use helpers::{display_path, normalize_path};
+use helpers::display_path;
 
 pub use impact::analyze_impact;
 pub use types::*;
@@ -65,19 +65,4 @@ fn detect_ignored_paths(root: &Path, builder: &mut RepoGraphBuilder) {
             );
         }
     }
-}
-
-fn manifest_warning_category(message: &str) -> DetectionCategory {
-    if message.starts_with("Failed to read") {
-        DetectionCategory::UnreadableManifest
-    } else {
-        DetectionCategory::MalformedManifest
-    }
-}
-
-fn read_toml(path: &Path) -> Result<TomlValue, String> {
-    fs::read_to_string(path)
-        .map_err(|error| format!("Failed to read {}: {error}", normalize_path(path)))?
-        .parse::<TomlValue>()
-        .map_err(|error| format!("Failed to parse {}: {error}", normalize_path(path)))
 }
