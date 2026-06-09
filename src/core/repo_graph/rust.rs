@@ -3,8 +3,9 @@ use std::path::{Path, PathBuf};
 use toml::Value as TomlValue;
 
 use super::helpers::{normalize_path, stable_id};
+use super::manifest::{manifest_warning_category, read_toml};
 use super::types::*;
-use super::{manifest_warning_category, read_toml, RepoGraphBuilder};
+use super::RepoGraphBuilder;
 
 struct CargoWorkspaceMember {
     relative_manifest: PathBuf,
