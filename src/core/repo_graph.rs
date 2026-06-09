@@ -5,6 +5,7 @@ mod builder;
 mod generic;
 mod go;
 mod helpers;
+mod ignored_paths;
 mod impact;
 mod manifest;
 mod node;
@@ -14,6 +15,7 @@ mod types;
 
 use builder::RepoGraphBuilder;
 use helpers::display_path;
+use ignored_paths::detect_ignored_paths;
 
 pub use impact::analyze_impact;
 pub use types::*;
@@ -41,28 +43,4 @@ pub fn inspect_repo(repo_path: impl AsRef<Path>) -> RepoInspection {
     }
 
     builder.finish()
-}
-
-fn detect_ignored_paths(root: &Path, builder: &mut RepoGraphBuilder) {
-    for (ignored_path, emit_warning) in [
-        (".git", false),
-        ("node_modules", true),
-        ("target", true),
-        ("dist", true),
-        ("build", true),
-        (".cache", true),
-        (".venv", true),
-        ("__pycache__", true),
-        ("coverage", true),
-    ] {
-        if emit_warning && root.join(ignored_path).exists() {
-            builder.add_warning(
-                DetectionSeverity::Info,
-                DetectionCategory::IgnoredPath,
-                "Generated, dependency, or cache directory was ignored by RepoGraph inspection.",
-                Some(Path::new(ignored_path)),
-                None,
-            );
-        }
-    }
 }
