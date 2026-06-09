@@ -2,8 +2,9 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use super::helpers::stable_id;
 use super::types::*;
-use super::{stable_id, RepoGraphBuilder};
+use super::RepoGraphBuilder;
 
 pub(super) fn detect_generic(root: &Path, builder: &mut RepoGraphBuilder) {
     let makefile = root.join("Makefile");
